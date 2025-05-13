@@ -1,0 +1,38 @@
+# ──────────────────────────────
+# 1) Dependencies
+#    (ignore EVERY node_modules)
+# ──────────────────────────────
+**/node_modules/
+.pnp/
+.pnp.js
+
+# ──────────────────────────────
+# 2) Environment variables
+#    (keep only the template)
+# ──────────────────────────────
+*.env
+!.env.example            # commit the safe sample
+
+# ──────────────────────────────
+# 3) Build / compiled output
+# ──────────────────────────────
+client/build/
+backend/dist/            # if you ever transpile the API
+coverage/                # test coverage reports
+
+# ──────────────────────────────
+# 4) Logs & misc
+# ──────────────────────────────
+*.log
+attendance.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# ──────────────────────────────
+# 5) IDE settings (optional)
+# ──────────────────────────────
+.vscode/
+.idea/

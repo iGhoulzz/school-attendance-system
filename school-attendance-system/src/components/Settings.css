@@ -1,0 +1,80 @@
+/* SettingsLanguage.css */
+.settings-container {
+  padding: 20px;
+}
+
+.settings-container h2 {
+  margin-bottom: 10px;
+  font-size: 1.5em;
+  color: #333;
+}
+
+.settings-container p {
+  margin-bottom: 20px; /* Adds spacing between paragraph and button */
+  font-size: 1.1em;
+  color: #555;
+}
+
+/* Language selector styling similar to the "Download PDF" button styling */
+.settings-container .language-selector {
+  position: relative;
+  display: inline-block;
+  margin-top: 40px; /* Increase margin-top to push it further down */
+  /* Removed padding:20px 0; to avoid unnecessary vertical space */
+}
+
+.settings-container .lang-btn {
+  background-color: #fff;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.settings-container .lang-btn:hover {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.settings-container .lang-dropdown {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  background-color: #f9fafb;
+  border-radius: 8px;
+  list-style-type: none;
+  padding: 10px 0;
+  margin: 0;
+  width: 140px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  display: none;
+}
+
+.settings-container .lang-dropdown li {
+  padding: 10px 15px;
+  color: #333;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: transform 0.3s ease, color 0.3s ease, background-color 0.3s ease;
+}
+
+.settings-container .lang-dropdown li:hover {
+  background-color: #3498db;
+  color: #fff;
+  transform: scale(1.05);
+  border-radius: 5px;
+}
+
+.settings-container .language-selector:hover .lang-dropdown {
+  display: block;
+}
+

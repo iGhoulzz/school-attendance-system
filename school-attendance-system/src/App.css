@@ -1,0 +1,279 @@
+@import "~@fortawesome/fontawesome-free/css/all.min.css";
+
+.App {
+  text-align: center;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Navbar Styles */
+.navbar { 
+  background-color: #130f40;
+  padding: 20px; /* Increased padding for more space */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0;
+  width: 100vw; /* Ensure full viewport width */
+  box-sizing: border-box; /* Prevent horizontal overflow */
+}
+
+
+.navbar .logo {
+  color: white;
+  font-size: 1.5em;
+}
+
+.navbar ul li a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.2em;
+  padding: 15px 40px;
+  background-color: black;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
+.navbar ul li a:hover {
+  background-color: black; /* Keeps the background color change */
+  box-shadow: 0px 0px 10px 2px white; /* Glowing white outline */
+  transform: translateY(-5px); /* Slight pop-up */
+  transition: 0.3s ease-in-out; /* Smooth transition */
+}
+
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+}
+
+.hero img {
+  width: 400px;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.hero h2 {
+  font-size: 2.5em;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.hero p {
+  font-size: 1.2em;
+  color: #666;
+  text-align: center;
+}
+
+/* Footer Styles */
+.footer {
+  background-color: #130f40;
+  color: white;
+  padding: 20px;
+  width: 100vw; /* Ensure the footer takes up the entire viewport width */
+  position: relative;
+  box-sizing: border-box; /* Prevent overflow */
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column; /* Stack items vertically */
+  align-items: flex-end; /* Align to the left */
+  padding-right: 20px; /* Add some padding to the right */
+  padding-left: 20px; /* Add padding to the left */
+}
+
+
+.footer-content p {
+  margin-bottom: 10px; /* Add space between each line */
+  display: flex;       /* Ensure icons and text align properly */
+  align-items: center; /* Vertically align icon with text */
+}
+
+.footer-content i {
+  margin-right: 10px;
+  font-size: 1.5em;
+  color: white;
+}
+
+
+
+
+
+.language-selector {
+  position: absolute;
+  bottom: 60px; /* Move it higher to prevent stretching */
+  left: 20px;
+}
+
+.lang-btn {
+  background-color: #130f40;
+  color: white;
+  font-size: 1.2em; /* Reduced size slightly */
+  padding: 8px 12px; /* Smaller padding to make it more compact */
+  border: none;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: 10px; /* Add margin to give space between the button and dropdown */
+  background-color: #2f2f7a;
+  border-radius: 8px;
+  list-style-type: none;
+  padding: 10px 0; /* Increased padding for easier hover */
+  margin: 0;
+  width: 140px; /* Slightly wider for better readability */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.lang-dropdown li {
+  padding: 10px 15px;
+  color: white;
+  font-size: 1.1em;
+  cursor: pointer;
+  transition: transform 0.3s ease, text-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.lang-dropdown li:hover {
+  text-shadow: 0 0 5px white;
+  transform: scale(1.05);
+  background-color: #3a3a9e;
+  border-radius: 5px;
+}
+
+.language-selector:hover .lang-dropdown {
+  display: block;
+}
+
+.language-selector {
+  padding: 10px; /* Increased padding to keep dropdown visible when hovering near it */
+}
+
+
+
+
+
+
+
+
+.login-container {
+  height: 100vh;
+  background-color: #130f40;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-card {
+  background-color: white;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+  position: relative;
+  text-align: center;
+  width: 350px;
+}
+
+.logo-placeholder {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.8em;
+}
+
+.user-icon {
+  font-size: 3em;
+  margin-bottom: 20px;
+}
+.login-input {
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.login-button {
+  background-color: #130f40;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.login-button:hover {
+  background-color: #0f0730;
+}
+
+.popup-message {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.popup-message.success {
+  background-color: #ddffdd;
+  color: #4CAF50;
+  border: 1px solid #4CAF50;
+}
+
+.popup-message.error {
+  background-color: #ffdddd;
+  color: #d8000c;
+  border: 1px solid #d8000c;
+}
+
+
+
+
+
+
+
+

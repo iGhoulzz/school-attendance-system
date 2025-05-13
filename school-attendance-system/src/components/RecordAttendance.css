@@ -1,0 +1,168 @@
+/* RecordAttendance.css */
+
+/* General container styling */
+.record-attendance-container {
+    padding: 20px;
+    background-color: #f4f6f8;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Title styling */
+.record-attendance-container h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+}
+
+/* Message styling scoped to record attendance */
+.record-attendance-container .message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.record-attendance-container .message.success {
+    background-color: #eafaf1; /* Light green for success messages */
+    color: #2e7d32; /* Dark green for success messages */
+    border: 1px solid #2e7d32;
+}
+
+.record-attendance-container .message.error {
+    background-color: #ffebee; /* Light red for error messages */
+    color: #d32f2f; /* Dark red for error messages */
+    border: 1px solid #d32f2f;
+}
+
+/* Form controls styling */
+.record-attendance-container label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.record-attendance-container select,
+.record-attendance-container input[type="date"],
+.record-attendance-container input[type="text"] {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+/* Bulk actions styling */
+.record-attendance-container .bulk-actions {
+    margin-bottom: 20px;
+}
+
+.record-attendance-container .bulk-actions button {
+    background-color: #130f40;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.record-attendance-container .bulk-actions button:hover {
+    background-color: #0f0730;
+}
+
+/* Table styling */
+.record-attendance-container table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.record-attendance-container table th,
+.record-attendance-container table td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.record-attendance-container table th {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+.record-attendance-container table tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+.record-attendance-container table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* Status select styling within table */
+.record-attendance-container table select {
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 14px;
+}
+
+/* Submit button styling */
+.record-attendance-container .submit-button {
+    background-color: #130f40;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 16px;
+}
+
+.record-attendance-container .submit-button:hover {
+    background-color: #0f0730;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .record-attendance-container table,
+    .record-attendance-container table thead,
+    .record-attendance-container table tbody,
+    .record-attendance-container table th,
+    .record-attendance-container table td,
+    .record-attendance-container table tr {
+        display: block;
+    }
+
+    .record-attendance-container table tr {
+        margin-bottom: 15px;
+    }
+
+    .record-attendance-container table td {
+        padding-left: 50%;
+        position: relative;
+    }
+
+    .record-attendance-container table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        width: calc(50% - 30px);
+        font-weight: bold;
+    }
+
+    .record-attendance-container .bulk-actions button {
+        margin-bottom: 10px;
+        width: 100%;
+    }
+
+    .record-attendance-container select,
+    .record-attendance-container input[type="date"],
+    .record-attendance-container input[type="text"] {
+        max-width: 100%;
+    }
+}

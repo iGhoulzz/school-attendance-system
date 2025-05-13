@@ -1,0 +1,97 @@
+/* General styling for Teacher Management page */
+.teacher-management-container {
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+/* Form styling for adding a new teacher */
+.add-teacher-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 400px;
+    margin-bottom: 20px;
+}
+
+.add-teacher-form input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+.add-teacher-form button {
+    padding: 10px 15px;
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.add-teacher-form button:hover {
+    background-color: #2980b9;
+}
+
+.add-teacher-form button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+/* Styling for success/error messages */
+.message {
+    color: #27ae60;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.message.error {
+    color: #e74c3c;
+}
+
+/* List of teachers */
+.teacher-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.teacher-item span {
+    flex: 1;
+    font-size: 1em;
+    color: #333;
+}
+
+/* Improved styling for teacher ID to make it more distinct */
+.teacher-item span.teacher-id {
+    font-weight: bold;
+    color: #7f8c8d; /* Subtle, distinct color for the ID */
+    margin-right: 10px;
+    font-size: 0.95em; /* Slightly smaller to distinguish it visually */
+}
+
+/* Delete button styling */
+.teacher-item button {
+    background-color: #e74c3c;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.teacher-item button:hover {
+    background-color: #c0392b;
+}
+
