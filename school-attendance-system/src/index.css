@@ -1,13 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Lexend:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
 body {
+  font-family: 'Inter', sans-serif;
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Lexend', sans-serif;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.75rem;
+}
+
+a {
+  transition: color 0.2s ease;
+  color: var(--text-primary);
+}
+
+a:hover {
+  color: #2963ff;
+}
+
+/* Form controls */
+input, textarea, select {
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border-color: var(--input-border);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #2963ff;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(41, 99, 255, 0.2);
+}
+
+/* Table styles */
+table {
+  border-color: var(--table-border);
+}
+
+th {
+  background-color: var(--table-header-bg);
+}
+
+/* Card styles */
+.card, .paper {
+  background-color: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-radius: 16px;
+}
+
+/* Responsive font sizes */
+@media (min-width: 768px) {
+  h1 { font-size: 3rem; }
+  h2 { font-size: 2.5rem; }
+  h3 { font-size: 2rem; }
+}
+
+@media (min-width: 1024px) {
+  h1 { font-size: 3.5rem; }
+  h2 { font-size: 3rem; }
+  h3 { font-size: 2.5rem; }
+}
+
+/* Additional UI elements with dark mode support */
+.button {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.button-primary {
+  background-color: #2963ff;
+  color: white;
+  border: none;
+}
+
+.button-primary:hover {
+  background-color: #1e4ecc;
+  transform: translateY(-2px);
+}
+
+.button-secondary {
+  background-color: #26cfac;
+  color: white;
+  border: none;
+}
+
+.button-secondary:hover {
+  background-color: #1eaa8c;
+  transform: translateY(-2px);
+}
+
+.dialog {
+  background-color: var(--card-bg);
+  color: var(--text-primary);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
 }

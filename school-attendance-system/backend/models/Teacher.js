@@ -10,6 +10,14 @@ const teacherSchema = new mongoose.Schema({
   password: { type: String, required: true },
   grades: [String], // List of grades the teacher teaches
   createdAt: { type: Date, default: Date.now },
+  resetPasswordToken: {
+    type: String,
+    default: undefined
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: undefined
+  },
 });
 
 // Hash the password before saving
@@ -21,8 +29,13 @@ teacherSchema.pre('save', async function (next) {
 });
 
 // Method to compare passwords
-teacherSchema.methods.comparePassword = function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+teacherSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    console.error('Error comparing teacher password:', error);
+    return false;
+  }
 };
 
 const Teacher = mongoose.model('Teacher', teacherSchema);

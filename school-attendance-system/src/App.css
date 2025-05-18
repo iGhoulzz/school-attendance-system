@@ -1,8 +1,62 @@
 @import "~@fortawesome/fontawesome-free/css/all.min.css";
 
+/* Theme CSS Variables */
+:root {
+  /* Light Theme (Default) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f7fa;
+  --bg-tertiary: #edf0f5;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border-color: #e1e4e8;
+  --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  --accent-gradient: linear-gradient(135deg, #2963ff 0%, #27cdb6 100%);
+  --nav-bg: #130f40;
+  --nav-text: #ffffff;
+  --hover-bg: rgba(41, 99, 255, 0.1);
+  --table-header-bg: rgba(41, 99, 255, 0.05);
+  --table-border: rgba(0, 0, 0, 0.1);
+  --card-bg: #ffffff;
+  --input-bg: #ffffff;
+  --input-border: #e1e4e8;
+  --input-text: #333333;
+  --sidebar-bg: #ffffff;
+  --sidebar-active: rgba(41, 99, 255, 0.1);
+}
+
+[data-theme='dark'] {
+  /* Dark Theme */
+  --bg-primary: #1a1d23;
+  --bg-secondary: #242830;
+  --bg-tertiary: #2d313c;
+  --text-primary: #e6e6e6;
+  --text-secondary: #a0a0a0;
+  --border-color: #404756;
+  --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  --accent-gradient: linear-gradient(135deg, #2963ff 0%, #27cdb6 100%);
+  --nav-bg: #0f1117;
+  --nav-text: #e6e6e6;
+  --hover-bg: rgba(41, 99, 255, 0.2);
+  --table-header-bg: rgba(41, 99, 255, 0.15);
+  --table-border: rgba(255, 255, 255, 0.1);
+  --card-bg: #242830;
+  --input-bg: #333842;
+  --input-border: #404756;
+  --input-text: #e6e6e6;
+  --sidebar-bg: #1a1d23;
+  --sidebar-active: rgba(41, 99, 255, 0.2);
+}
+
+/* Add smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
 .App {
   text-align: center;
   overflow-x: hidden; /* Prevent horizontal scrolling */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .App-logo {
@@ -17,18 +71,18 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: var(--bg-secondary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  color: white;
+  color: var(--text-primary);
 }
 
 .App-link {
-  color: #61dafb;
+  color: #2963ff;
 }
 
 @keyframes App-logo-spin {
@@ -42,7 +96,7 @@
 
 /* Navbar Styles */
 .navbar { 
-  background-color: #130f40;
+  background-color: var(--nav-bg);
   padding: 20px; /* Increased padding for more space */
   display: flex;
   justify-content: space-between;
@@ -54,12 +108,12 @@
 
 
 .navbar .logo {
-  color: white;
+  color: var(--nav-text);
   font-size: 1.5em;
 }
 
 .navbar ul li a {
-  color: white;
+  color: var(--nav-text);
   text-decoration: none;
   font-size: 1.2em;
   padding: 15px 40px;

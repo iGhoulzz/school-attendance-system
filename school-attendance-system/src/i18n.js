@@ -1,9 +1,17 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
-const resources = {
-  en: {
-    translation: {
+// Get saved language from local storage or default to English
+const savedLanguage = typeof window !== 'undefined' ? 
+  localStorage.getItem('language') || 'en' : 'en';
+
+// Set document direction for RTL support
+if (typeof document !== 'undefined') {
+  document.documentElement.dir = savedLanguage === 'ar' ? 'rtl' : 'ltr';
+}
+
+const resources = {en: {
+    translation: {      
       "welcomeMessage": "Welcome to Our School",
       "description": "A brief description about the school and its values goes here.",
       "contactUs": "Contact us",
@@ -12,9 +20,39 @@ const resources = {
       "emailPlaceholder": "Email",
       "passwordPlaceholder": "Password",
       "loginButton": "Login",
+      "loggingIn": "Logging in...",
+      "loginError": "Login failed. Please check your credentials and try again.",
+      "forgotPassword": "Forgot Password?",
+      
+      // Home page content
+      "schoolAttendanceSystem": "School Attendance System",
+      "modernSchoolAttendanceSystem": "Modern School Attendance System",
+      "homeHeroSubtitle": "Streamline attendance tracking, generate insightful reports, and improve communication with parents, all in one powerful platform.",
+      "getStarted": "Get Started",
+      "learnMore": "Learn More",
+      "designedForModernEducation": "Designed for Modern Education",
+      "attendanceSystemHelps": "Our attendance system helps schools streamline operations and improve student outcomes.",
+      "realTimeAttendance": "Real-time Attendance",
+      "realTimeAttendanceDesc": "Record and monitor attendance in real-time with our intuitive interface, designed for quick and accurate tracking.",
+      "automatedNotifications": "Automated Notifications",
+      "automatedNotificationsDesc": "Send automatic alerts to parents when students are absent, improving communication and reducing administrative workload.",
+      "comprehensiveReports": "Comprehensive Reports",
+      "comprehensiveReportsDesc": "Generate detailed attendance reports and analytics to identify patterns and improve student attendance rates.",
+      "easyManagement": "Easy Management",
+      "easyManagementDesc": "Manage students, teachers, and classes all in one place with our user-friendly administrative dashboard.",
 
       // Dashboard related
       "Dashboard": "Dashboard",
+      "todayAttendance": "Today's Attendance",
+      "totalStudents": "Total Students",
+      "absentToday": "Absent Today",
+      "activeEnrollment": "Active Enrollment",
+      "presentToday": "{{count}} Students Present",
+      "absentCount": "Students Absent",
+      "recentActivity": "Recent Activity",
+      "noRecentActivity": "No recent activity",
+      "attendanceRecordActivity": "Grade {{grade}} attendance recorded by {{teacher}} on {{date}} (Present: {{present}}, Absent: {{absent}})",
+
       "RecordAttendance": "Record Attendance",
       "AttendanceReports": "Attendance Reports",
       "StudentManagement": "Student Management",
@@ -32,10 +70,11 @@ const resources = {
       "ParentName": "Parent Name",
       "ParentEmail": "Parent Email",
       "ParentPhone": "Parent Phone",
-      "Grade": "Grade",
-      "Present": "Present",
-      "Absent": "Absent",
-      "Late": "Late",
+      "Grade": "Grade",      "attendanceStatus": {
+        "present": "Present",
+        "absent": "Absent",
+        "late": "Late"
+      },
 
       // Teacher Management page keys
       "AddTeacherButton": "Add Teacher",
@@ -95,8 +134,8 @@ const resources = {
       "MarkAllAbsent": "Mark All Absent",
       "MarkAllLate": "Mark All Late",
       "SubmitAttendance": "Submit Attendance",
-      "attendanceRecordedSuccessfully": "Attendance recorded successfully.",
-      "errorRecordingAttendance": "Error recording attendance.",
+      "attendanceRecordedSuccessfully": "Attendance recorded successfully.",      "errorRecordingAttendance": "Error recording attendance.",
+      "errorFetchingGrades": "Error fetching grades.",
       "UnknownStudent": "Unknown Student",
 
       // StudentDetail keys
@@ -109,17 +148,42 @@ const resources = {
       "dateAdded": "Date Added",
       "saving": "Saving...",
       "save": "Save",
-      "cancel": "Cancel",
-
-      // Access Denied
+      "cancel": "Cancel",      // Access Denied
       "accessDeniedOnlyAdmins": "Access Denied: Only admins can manage teachers.",
       "welcomeToDashboard": "Welcome to the Dashboard!",
+
+      // Admin Management
+      "adminManagement": "Admin Management",
+      "addNewAdmin": "Add New Admin",
+      "confirmPassword": "Confirm Password",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "adminCreatedSuccessfully": "Admin created successfully",
+      "adminDeletedSuccessfully": "Admin deleted successfully",
+      "errorCreatingAdmin": "Error creating admin",
+      "errorDeletingAdmin": "Error deleting admin",
+      "errorFetchingAdmins": "Error fetching admins",
+      "noAdminsFound": "No admins found",
+      "deleteAdmin": "Delete Admin",
+      "creating": "Creating...",
+      "create": "Create",
+      "actions": "Actions",      // Reset Password
+      "resetPassword": "Reset Password",
+      "forgotPassword": "Forgot Password?",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "resetLinkSent": "Password reset link has been sent to your email",
+      "errorRequestingReset": "Error requesting password reset",
+      "errorResettingPassword": "Error resetting password",
+      "passwordResetSuccess": "Password has been reset successfully",
+      "sendResetLink": "Send Reset Link",
+      "backToLogin": "Back to Login",
+      "email": "Email",
 
       // Language key
       "Language": "Language"
     }
-  },
-  ar: {
+  },  ar: {
     translation: {
       "welcomeMessage": "مرحبًا بكم في مدرستنا",
       "description": "وصف موجز عن المدرسة وقيمها يذهب هنا.",
@@ -129,9 +193,51 @@ const resources = {
       "emailPlaceholder": "البريد الإلكتروني",
       "passwordPlaceholder": "كلمة المرور",
       "loginButton": "تسجيل الدخول",
+      
+      // Home page content
+      "schoolAttendanceSystem": "نظام حضور المدرسة",
+      "modernSchoolAttendanceSystem": "نظام حضور المدرسة الحديث",
+      "homeHeroSubtitle": "تبسيط تتبع الحضور، وإنشاء تقارير مفيدة، وتحسين التواصل مع أولياء الأمور، كل ذلك في منصة واحدة قوية.",
+      "getStarted": "ابدأ الآن",
+      "learnMore": "اعرف المزيد",
+      "designedForModernEducation": "مصمم للتعليم الحديث",
+      "attendanceSystemHelps": "يساعد نظام الحضور لدينا المدارس على تبسيط العمليات وتحسين نتائج الطلاب.",
+      "realTimeAttendance": "حضور في الوقت الحقيقي",
+      "realTimeAttendanceDesc": "سجل وراقب الحضور في الوقت الحقيقي مع واجهتنا البديهية، المصممة للتتبع السريع والدقيق.",
+      "automatedNotifications": "إشعارات آلية",
+      "automatedNotificationsDesc": "أرسل تنبيهات تلقائية للوالدين عندما يكون الطلاب غائبين، وتحسين الاتصال وتقليل عبء العمل الإداري.",
+      "comprehensiveReports": "تقارير شاملة",
+      "comprehensiveReportsDesc": "أنشئ تقارير حضور مفصلة وتحليلات لتحديد الأنماط وتحسين معدلات حضور الطلاب.",
+      "easyManagement": "إدارة سهلة",
+      "easyManagementDesc": "إدارة الطلاب والمعلمين والفصول الدراسية في مكان واحد باستخدام لوحة الإدارة سهلة الاستخدام.",
+      
+      // Footer content
+      "quickLinks": "روابط سريعة",
+      "support": "الدعم",
+      "helpCenter": "مركز المساعدة",
+      "faq": "الأسئلة الشائعة",
+      "privacyPolicy": "سياسة الخصوصية",
+      "termsConditions": "الشروط والأحكام",
+      "features": "الميزات",
+      "about": "عن النظام",
+      "home": "الرئيسية",
+      "contact": "اتصل بنا",
+      "login": "تسجيل الدخول",
+      "allRightsReserved": "جميع الحقوق محفوظة",
+      "footerDescription": "نظام سهل الاستخدام لتسجيل الحضور وإدارة الطلاب وإنشاء التقارير.",
 
       // Dashboard related
       "Dashboard": "لوحة التحكم",
+      "todayAttendance": "حضور اليوم",
+      "totalStudents": "إجمالي الطلاب",
+      "absentToday": "غائبون اليوم",
+      "activeEnrollment": "التحاق نشط",
+      "presentToday": "{{count}} طالب حاضر",
+      "absentCount": "الطلاب الغائبون",
+      "recentActivity": "نشاطات حديثة",
+      "noRecentActivity": "لا توجد نشاطات حديثة",
+      "attendanceRecordActivity": "تم تسجيل حضور الصف {{grade}} بواسطة {{teacher}} في {{date}} (حاضر: {{present}}, غائب: {{absent}})",
+
       "RecordAttendance": "تسجيل الحضور",
       "AttendanceReports": "تقارير الحضور",
       "StudentManagement": "إدارة الطلاب",
@@ -149,10 +255,11 @@ const resources = {
       "ParentName": "اسم ولي الأمر",
       "ParentEmail": "بريد ولي الأمر الإلكتروني",
       "ParentPhone": "هاتف ولي الأمر",
-      "Grade": "الصف",
-      "Present": "حاضر",
-      "Absent": "غائب",
-      "Late": "متأخر",
+      "Grade": "الصف",      "attendanceStatus": {
+        "present": "حاضر",
+        "absent": "غائب",
+        "late": "متأخر"
+      },
 
       // Teacher Management page keys
       "AddTeacherButton": "إضافة معلم",
@@ -226,11 +333,26 @@ const resources = {
       "dateAdded": "تاريخ الإضافة",
       "saving": "جارٍ الحفظ...",
       "save": "حفظ",
-      "cancel": "إلغاء",
-
-      // Access Denied
+      "cancel": "إلغاء",      // Access Denied
       "accessDeniedOnlyAdmins": "الوصول مرفوض: يمكن للمسؤولين فقط إدارة المعلمين.",
       "welcomeToDashboard": "مرحباً في لوحة التحكم!",
+      
+      // Admin Management
+      "AdminManagement": "إدارة المسؤولين",
+      "adminManagement": "إدارة المسؤولين",
+      "addNewAdmin": "إضافة مسؤول جديد",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "passwordsDoNotMatch": "كلمات المرور غير متطابقة",
+      "adminCreatedSuccessfully": "تم إنشاء المسؤول بنجاح",
+      "adminDeletedSuccessfully": "تم حذف المسؤول بنجاح",
+      "errorCreatingAdmin": "خطأ في إنشاء المسؤول",
+      "errorDeletingAdmin": "خطأ في حذف المسؤول",
+      "errorFetchingAdmins": "خطأ في جلب المسؤولين",
+      "noAdminsFound": "لم يتم العثور على مسؤولين",
+      "deleteAdmin": "حذف المسؤول",
+      "creating": "جاري الإنشاء...",
+      "create": "إنشاء",
+      "actions": "إجراءات",
 
       // Language key
       "Language": "اللغة"
@@ -240,7 +362,7 @@ const resources = {
 
 i18n.use(initReactI18next).init({
   resources,
-  lng: 'en', // Default language
+  lng: savedLanguage, // Use saved language or default to 'en'
   fallbackLng: 'en',
   interpolation: {
     escapeValue: false,

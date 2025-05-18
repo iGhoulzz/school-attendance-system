@@ -1,42 +1,29 @@
-/* SettingsLanguage.css */
-.settings-container {
-  padding: 20px;
+/* Settings.css */
+/* Most styles are handled by Material UI, but we can add theme-specific CSS variables here */
+
+:root[data-theme='light'] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f7fa;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --border-color: #e1e4e8;
+  --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  --accent-gradient: linear-gradient(135deg, #2963ff 0%, #27cdb6 100%);
 }
 
-.settings-container h2 {
-  margin-bottom: 10px;
-  font-size: 1.5em;
-  color: #333;
+:root[data-theme='dark'] {
+  --bg-primary: #1a1d23;
+  --bg-secondary: #242830;
+  --text-primary: #e6e6e6;
+  --text-secondary: #a0a0a0;
+  --border-color: #404756;
+  --card-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  --accent-gradient: linear-gradient(135deg, #2963ff 0%, #27cdb6 100%);
 }
 
-.settings-container p {
-  margin-bottom: 20px; /* Adds spacing between paragraph and button */
-  font-size: 1.1em;
-  color: #555;
-}
-
-/* Language selector styling similar to the "Download PDF" button styling */
-.settings-container .language-selector {
-  position: relative;
-  display: inline-block;
-  margin-top: 40px; /* Increase margin-top to push it further down */
-  /* Removed padding:20px 0; to avoid unnecessary vertical space */
-}
-
-.settings-container .lang-btn {
-  background-color: #fff;
-  color: #333;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  transition: background-color 0.3s ease, color 0.3s ease;
+/* Add transition for smooth theme switching */
+body, .MuiPaper-root, .MuiCard-root, .MuiDialog-paper {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .settings-container .lang-btn:hover {

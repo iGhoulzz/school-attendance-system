@@ -142,6 +142,24 @@ router.delete('/by-id/:id', authMiddleware, async (req, res) => {
   }
 });
 
+// Get students by grade (GET /api/students/byGrade/:grade)
+router.get('/byGrade/:grade', authMiddleware, async (req, res) => {
+  try {
+    const { grade } = req.params;
+    
+    if (!grade) {
+      return res.status(400).json({ message: 'Grade parameter is required' });
+    }
+    
+    const students = await Student.find({ grade });
+    
+    res.status(200).json(students);
+  } catch (error) {
+    console.error('Error fetching students by grade:', error.message);
+    res.status(500).json({ message: 'Error fetching students', error: error.message });
+  }
+});
+
 module.exports = router;
 
 

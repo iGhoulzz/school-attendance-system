@@ -1,0 +1,58 @@
+// Dashboard.js
+import React, { useState, useEffect, useCallback, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import axios from 'axios';
+import { storageUtils } from '../utils/storageUtils';
+import { styled } from '@mui/material/styles';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ThemeContext, ThemeProvider } from '../utils/themeContext';
+import { 
+  AppBar, 
+  Toolbar, 
+  Drawer, 
+  List, 
+  ListItem, 
+  ListItemIcon, 
+  ListItemText, 
+  Avatar, 
+  Typography, 
+  Box, 
+  IconButton, 
+  Badge, 
+  Menu, 
+  MenuItem, 
+  Divider,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+  CircularProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Paper
+} from '@mui/material';
+import {
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  School as SchoolIcon,
+  AssignmentTurnedIn as AttendanceIcon,
+  Assessment as ReportsIcon,
+  Settings as SettingsIcon,
+  Person as TeacherIcon,
+  Notifications as NotificationsIcon,
+  ExitToApp as LogoutIcon,
+  Menu as MenuIcon,
+  AdminPanelSettings as AdminPanelSettingsIcon,
+  Delete as DeleteIcon
+} from '@mui/icons-material';
+// Components
+import TeacherManagement from './TeacherManagement'; 
+import StudentManagement from './StudentManagement'; 
+import RecordAttendance from './RecordAttendance'; 
+import AttendanceReports from './AttendanceReports'; 
+import Settings from './Settings';
+import AdminManagement from './AdminManagement';
+const apiService = require('../services/apiService');
