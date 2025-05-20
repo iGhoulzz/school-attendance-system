@@ -33,9 +33,11 @@ import {
   Edit as EditIcon,
   PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
-import { storageUtils } from '../utils/storageUtils';
+import storageUtils from '../utils/storageUtils';
 
-const StyledCard = styled(Card)(({ theme, themeMode }) => ({
+const StyledCard = styled(Card, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   margin: theme.spacing(2),
   borderRadius: '16px',
   boxShadow: themeMode?.theme === 'dark' 
@@ -63,18 +65,23 @@ const AdminManagement = () => {
     email: '',
     password: '',
     confirmPassword: ''
-  });
-
-  const fetchAdmins = async () => {
+  });  const fetchAdmins = async () => {
     try {
       setLoading(true);
       const token = storageUtils.getToken();
-      const response = await axios.get('http://localhost:5001/api/admin-management/admins', {
+      const response = await apiService.get('/admin-management/admins', {
         headers: { Authorization: `Bearer ${token}` }
-      });
-      setAdmins(response.data);
+      });      // Handle different possible response formats
+      // Note: Since apiService.get already returns response.data, we don't need to access .data again
+      const adminData = Array.isArray(response) ? response :
+                       response?.admins ? response.admins :
+                       response || [];
+                       
+      setAdmins(adminData);
     } catch (err) {
+      console.error('Error fetching admins:', err);
       setError(t('errorFetchingAdmins'));
+      setAdmins([]);
     } finally {
       setLoading(false);
     }
@@ -113,7 +120,7 @@ const AdminManagement = () => {
     try {
       setLoading(true);
       const token = storageUtils.getToken();
-      await axios.delete(`http://localhost:5001/api/admin-management/delete/${adminId}`, {
+      await apiService.delete(`/admin-management/delete/${adminId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess(t('adminDeletedSuccessfully'));
@@ -181,32 +188,28 @@ const AdminManagement = () => {
         >
           {success}
         </Alert>
-      )}<StyledCard themeMode={themeMode}>
-        <CardContent>          <TableContainer component={Paper} sx={{ 
-            borderRadius: 2,
-            backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.background.paper : themes.light.colors.background.paper,
-          }}>
+      )}<StyledCard themeMode={themeMode}>        <CardContent>
+          <TableContainer
+            component={Paper}
+            sx={{
+              borderRadius: 2,
+              backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.background.paper : themes.light.colors.background.paper,
+            }}
+          >
             <Table>
-              <TableHead>                <TableRow>
-                  <TableCell sx={{ 
+              <TableHead><TableRow><TableCell sx={{ 
                     fontWeight: 'bold',
                     color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
                     backgroundColor: themeMode?.theme === 'dark' ? 'rgba(37, 42, 52, 0.9)' : 'white'
-                  }}>{t('name')}</TableCell>
-                  <TableCell sx={{ 
+                  }}>{t('name')}</TableCell><TableCell sx={{ 
                     fontWeight: 'bold',
                     color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
                     backgroundColor: themeMode?.theme === 'dark' ? 'rgba(37, 42, 52, 0.9)' : 'white'
-                  }}>{t('email')}</TableCell>
-                  <TableCell sx={{ 
+                  }}>{t('email')}</TableCell><TableCell sx={{ 
                     fontWeight: 'bold',
                     color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
                     backgroundColor: themeMode?.theme === 'dark' ? 'rgba(37, 42, 52, 0.9)' : 'white'
-                  }}>{t('actions')}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>                {loading ? (
-                  <TableRow>
+                  }}>{t('actions')}</TableCell></TableRow></TableHead><TableBody>{loading ? (<TableRow>
                     <TableCell colSpan={3} align="center" sx={{ 
                       color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
                     }}>
@@ -214,17 +217,13 @@ const AdminManagement = () => {
                         color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary 
                       }} />
                     </TableCell>
-                  </TableRow>
-                ) : admins.length === 0 ? (
-                  <TableRow>
+                  </TableRow>) : admins.length === 0 ? (<TableRow>
                     <TableCell colSpan={3} align="center" sx={{ 
                       color: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'inherit'
                     }}>
                       {t('noAdminsFound')}
                     </TableCell>
-                  </TableRow>
-                ) : (admins.map((admin) => (
-                    <TableRow key={admin._id} sx={{ 
+                  </TableRow>) : (admins.map((admin) => (<TableRow key={admin._id} sx={{ 
                       '&:nth-of-type(odd)': { 
                         backgroundColor: themeMode?.theme === 'dark' 
                           ? 'rgba(255, 255, 255, 0.02)' 
@@ -244,16 +243,19 @@ const AdminManagement = () => {
                       }}>{admin.email}</TableCell>
                       <TableCell>
                         <Tooltip title={t('deleteAdmin')}>
-                          <IconButton
-                            onClick={() => handleDeleteAdmin(admin._id)}
-                            color="error"
-                            size="small"
-                            sx={{
-                              color: themeMode?.theme === 'dark' ? '#f44336' : undefined
-                            }}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                          <span>
+                            <IconButton
+                              onClick={() => handleDeleteAdmin(admin._id)}
+                              color="error"
+                              size="small"
+                              disabled={loading}
+                              sx={{
+                                color: themeMode?.theme === 'dark' ? '#f44336' : undefined
+                              }}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </TableCell>
                     </TableRow>
@@ -399,26 +401,33 @@ const AdminManagement = () => {
         </DialogContent>        <DialogActions>
           <Button 
             onClick={() => setOpenDialog(false)}
+            disabled={loading}
             sx={{
               color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : undefined,
               '&:hover': {
                 backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : undefined,
               }
             }}
-          >{t('cancel')}</Button>
-          <Button
-            onClick={handleCreateAdmin}
-            variant="contained"
-            disabled={loading}
-            sx={{ 
-              backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
-              '&:hover': {
-                backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.9)' : undefined,
-              }
-            }}
           >
-            {loading ? t('creating') : t('create')}
+            {t('cancel')}
           </Button>
+          <Tooltip title={loading ? t('creating') : t('create')}>
+            <span>
+              <Button
+                onClick={handleCreateAdmin}
+                variant="contained"
+                disabled={loading}
+                sx={{ 
+                  backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
+                  '&:hover': {
+                    backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.9)' : undefined,
+                  }
+                }}
+              >
+                {loading ? t('creating') : t('create')}
+              </Button>
+            </span>
+          </Tooltip>
         </DialogActions>
       </Dialog>
     </Box>

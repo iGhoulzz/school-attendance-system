@@ -10,12 +10,16 @@ import SchoolIcon from '@mui/icons-material/School';
 import { ThemeContext } from './utils/themeContext';
 
 // Home page component for the landing page
+import { AuthProvider } from './contexts/AuthContext';
+
 function App() {
   const { t } = useTranslation();
   const themeContext = useContext(ThemeContext);
   
   return (
-    <Box className="App">
+    <ThemeContext.Provider value={themeContext}>
+      <AuthProvider>
+        <Box className="App">
       <Navbar />
       
       <HeroSection>
@@ -148,6 +152,8 @@ function App() {
       
       <Footer />
     </Box>
+      </AuthProvider>
+    </ThemeContext.Provider>
   );
 }
 

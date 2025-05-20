@@ -1,12 +1,12 @@
 // src/components/TeacherManagement.js
-import React, { useState, useEffect, useCallback, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useMemo, useRef } from 'react';
 import './TeacherManagement.css';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ThemeContext, themes } from '../utils/themeContext';
 import { useApiData, useApiPost, useApiDelete } from '../hooks/useApiData';
 import { createDebouncedClickHandler } from '../utils/debounceUtils';
-import { debounce } from 'lodash';
+import { debounce, throttle } from 'lodash';
 import DOMPurify from 'dompurify';
 import {
   Box, 
@@ -43,6 +43,12 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+
+const StyledMotionDiv = styled(motion.div, {
+  shouldForwardProp: (prop) => prop !== 'themeContext'
+})(() => ({
+  // No specific styling needed, just filtering the prop
+}));
 
 const FormPaper = styled(Paper, {
   shouldForwardProp: (prop) => prop !== 'themeContext'
@@ -128,19 +134,20 @@ const ActionButton = styled(Button, {
 
 // Function to convert teachers array to a string for memoization comparison
 const teachersToString = (teachers) => {
+  if (!Array.isArray(teachers)) return '';
   return teachers.map(t => `${t._id}-${t.name}-${t.surname}`).join('|');
 };
 
 // Memoized TeachersList component to prevent unnecessary re-renders
 const TeachersList = React.memo(
   ({ 
-    teachers, 
+    teachers = [], 
     onDeleteClick, 
     themeContext 
   }) => {
     const { t } = useTranslation();
     
-    if (teachers.length === 0) {
+    if (!Array.isArray(teachers) || teachers.length === 0) {
       return (
         <Box p={4} textAlign="center">
           <Typography sx={{
@@ -180,15 +187,17 @@ const TeachersList = React.memo(
               />
               <ListItemSecondaryAction>
                 <Tooltip title={t('Delete')}>
-                  <IconButton 
-                    edge="end" 
-                    onClick={() => onDeleteClick(teacher)}
-                    sx={{
-                      color: themeContext?.theme === 'dark' ? '#f44336' : 'error.main'
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <span>
+                    <IconButton 
+                      edge="end" 
+                      onClick={() => onDeleteClick(teacher)}
+                      sx={{
+                        color: themeContext?.theme === 'dark' ? '#f44336' : 'error.main'
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </span>
                 </Tooltip>
               </ListItemSecondaryAction>
             </ListItem>
@@ -205,7 +214,9 @@ const TeachersList = React.memo(
   },
   // Custom comparison function for memoization
   (prevProps, nextProps) => {
-    return teachersToString(prevProps.teachers) === teachersToString(nextProps.teachers) &&
+    const prevTeachers = Array.isArray(prevProps.teachers) ? prevProps.teachers : [];
+    const nextTeachers = Array.isArray(nextProps.teachers) ? nextProps.teachers : [];
+    return teachersToString(prevTeachers) === teachersToString(nextTeachers) &&
            prevProps.themeContext?.theme === nextProps.themeContext?.theme;
   }
 );
@@ -213,6 +224,7 @@ const TeachersList = React.memo(
 // Filter teachers by search query with sanitization and memoization
 const useFilteredTeachers = (teachers, searchQuery) => {
   return useMemo(() => {
+    if (!Array.isArray(teachers)) return [];
     if (!searchQuery.trim()) return teachers;
     
     // Sanitize the search query to prevent XSS
@@ -242,7 +254,7 @@ function TeacherManagement() {
   const [teacherToDelete, setTeacherToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Use our custom hooks for API data
+  // Use our custom hooks for API data with proper default value
   const { 
     data: teachers = [], 
     loading, 
@@ -250,6 +262,26 @@ function TeacherManagement() {
   } = useApiData('/teachers', { 
     cacheExpiryMinutes: 5 // Cache teacher list for 5 minutes
   });
+
+  // Create a throttled function to fetch teachers to avoid excessive API calls
+  const throttledFetchTeachers = useRef(
+    throttle(fetchTeachers, 30000, { trailing: true })
+  ).current;
+
+  // Use the throttled function in useEffect to prevent API hammering
+  useEffect(() => {
+    throttledFetchTeachers();
+    
+    // Optional visibility change listener to refresh when tab becomes visible
+    const onVisible = () => {
+      if (!document.hidden) {
+        throttledFetchTeachers();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []); // Empty deps array = run only once on mount
 
   const { postData, posting: creatingTeacher } = useApiPost();
   const { deleteData, deleting: deletingTeacher } = useApiDelete();
@@ -329,7 +361,8 @@ function TeacherManagement() {
   );
 
   // Filtered teachers based on search query
-  const filteredTeachers = useFilteredTeachers(teachers, searchQuery);
+  const safeTeachers = Array.isArray(teachers) ? teachers : [];
+  const filteredTeachers = useFilteredTeachers(safeTeachers, searchQuery);
 
   const handleSearchChange = useCallback((e) => {
     // Sanitize input to prevent XSS attacks
@@ -351,18 +384,18 @@ function TeacherManagement() {
     [handleSearchChange]
   );
 
-  return (
-    <Box sx={{ p: 3, maxWidth: '100%' }}>      <motion.div
+  return (    <Box sx={{ p: 3, maxWidth: '100%' }}>      <StyledMotionDiv
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        themeContext={themeContext}
       >
         <Typography variant="h4" fontWeight="bold" gutterBottom sx={{
           color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary
         }}>
           {t('TeacherManagement')}
         </Typography>
-      </motion.div>
+      </StyledMotionDiv>
 
       {message && (
         <Fade in={!!message}>
@@ -388,13 +421,11 @@ function TeacherManagement() {
             {message}
           </Alert>
         </Fade>
-      )}
-
-      <motion.div
+      )}      <StyledMotionDiv
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-      >        <FormPaper elevation={0} themeMode={themeContext}>
+        themeContext={themeContext}><FormPaper elevation={0} themeContext={themeContext}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Typography 
@@ -425,31 +456,28 @@ function TeacherManagement() {
                   label={t('FirstName')}
                   value={newTeacher.name}
                   // No need to debounce this simple state update
-                  onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}
-                  required
+                  onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}                  required
                   variant="outlined"
                   placeholder={t('enterFirstName')}
-                  themeMode={themeContext}
+                  themeContext={themeContext}
                 />
                 <StyledTextField
                   fullWidth
                   label={t('Surname')}
                   value={newTeacher.surname}
-                  onChange={(e) => setNewTeacher({ ...newTeacher, surname: e.target.value })}
-                  required
+                  onChange={(e) => setNewTeacher({ ...newTeacher, surname: e.target.value })}                  required
                   variant="outlined"
                   placeholder={t('enterSurname')}
-                  themeMode={themeContext}
+                  themeContext={themeContext}
                 />                <StyledTextField
                   fullWidth
                   label={t('Email')}
                   value={newTeacher.email}
-                  onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}
-                  required
+                  onChange={(e) => setNewTeacher({ ...newTeacher, email: e.target.value })}                  required
                   variant="outlined"
                   type="email"
                   placeholder={t('enterEmail')}
-                  themeMode={themeContext}
+                  themeContext={themeContext}
                   InputProps={{
                     startAdornment: <EmailIcon 
                       sx={{ 
@@ -463,44 +491,46 @@ function TeacherManagement() {
                   fullWidth
                   label={t('Password')}
                   value={newTeacher.password}
-                  onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}
-                  required
+                  onChange={(e) => setNewTeacher({ ...newTeacher, password: e.target.value })}                  required
                   variant="outlined"
                   type="password"
                   placeholder={t('enterPassword')}
-                  themeMode={themeContext}
+                  themeContext={themeContext}
                 />
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <motion.div
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>                  <StyledMotionDiv
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
-                  >                    <ActionButton
-                      variant="contained"
-                      onClick={debouncedCreateTeacher}
-                      disabled={creatingTeacher}
-                      startIcon={<SaveIcon />}
-                      themeMode={themeContext}
-                      sx={{ 
-                        py: 1, 
-                        px: 4,
-                        background: 'linear-gradient(90deg, #4776E6 0%, #8E54E9 100%)',
-                      }}
-                    >
-                      {creatingTeacher ? <CircularProgress size={24} /> : t('AddTeacherButton')}
-                    </ActionButton>
-                  </motion.div>
+                    themeContext={themeContext}
+                  >
+                    <Tooltip title={t('AddTeacher')}>
+                      <span>
+                        <ActionButton
+                          variant="contained"
+                          onClick={debouncedCreateTeacher}
+                          disabled={creatingTeacher}
+                          startIcon={<SaveIcon />}
+                          themeContext={themeContext}
+                          sx={{ 
+                            py: 1, 
+                            px: 4,
+                            background: 'linear-gradient(90deg, #4776E6 0%, #8E54E9 100%)',
+                          }}
+                        >
+                          {creatingTeacher ? <CircularProgress size={24} /> : t('AddTeacherButton')}
+                        </ActionButton>
+                      </span>
+                    </Tooltip>
+                  </StyledMotionDiv>
                 </Box>
               </Stack>
             </Grid>
           </Grid>
-        </FormPaper>
-      </motion.div>
-
-      <motion.div
+        </FormPaper>      </StyledMotionDiv>      <StyledMotionDiv
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-      >        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+        themeContext={themeContext}
+      ><Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <SchoolIcon sx={{ 
             mr: 1, 
             color: themeContext?.theme === 'dark' ? themes.dark.colors.primary : 'primary.main' 
@@ -510,12 +540,12 @@ function TeacherManagement() {
           }}>
             {t('TeachersList')}
           </Typography>
-        </Box>        {loading && !teachers.length ? (
-          <Box display="flex" justifyContent="center" alignItems="center" py={8}>
+        </Box>
+        {loading && !Array.isArray(teachers) ? (          <Box display="flex" justifyContent="center" alignItems="center" py={8}>
             <CircularProgress size={60} />
           </Box>
         ) : (
-          <ListPaper elevation={0} themeMode={themeContext}>
+          <ListPaper elevation={0} themeContext={themeContext}>
             <TeachersList 
               teachers={filteredTeachers} 
               onDeleteClick={debouncedPromptDeleteTeacher}
@@ -523,7 +553,7 @@ function TeacherManagement() {
             />
           </ListPaper>
         )}
-      </motion.div>      <Dialog 
+      </StyledMotionDiv>      <Dialog 
         open={confirmDialogOpen} 
         onClose={() => setConfirmDialogOpen(false)}
         PaperProps={{
@@ -571,6 +601,7 @@ function TeacherManagement() {
             onClick={debouncedConfirmDelete} 
             color="error"
             variant="contained"
+            disabled={deletingTeacher}
             sx={{ borderRadius: 2 }}
           >
             {deletingTeacher ? <CircularProgress size={24} color="inherit" /> : t('Delete')}

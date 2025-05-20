@@ -41,7 +41,8 @@ import {
   Class as ClassIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
-import { storageUtils } from '../utils/storageUtils';
+// Import storageUtils only once
+import storageUtils from '../utils/storageUtils';
 
 const StyledTableContainer = styled(TableContainer)(({ theme, themeMode }) => ({
   maxHeight: '60vh',
@@ -90,6 +91,8 @@ const ActionButton = styled(Button)(({ theme, themeMode }) => ({
   },
 }));
 
+const POLLING_INTERVAL = 5 * 60 * 1000; // 5 minutes instead of 1 minute
+
 function RecordAttendance() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -101,6 +104,8 @@ function RecordAttendance() {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
   const [loading, setLoading] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+
   const fetchGrades = useCallback(async () => {
     try {
       // Check in cache first
@@ -112,26 +117,22 @@ function RecordAttendance() {
         return;
       }
       
-      // If not in cache, fetch from API
-      const response = await axios.get('http://localhost:5001/api/grades', {
-        withCredentials: true // Use HTTP-only cookies
-      });
+      // If not in cache, fetch from API using apiService
+      const gradesData = await apiService.get('/grades');
       
-      setGrades(response.data);
+      setGrades(gradesData);
       
       // Cache the response for 1 hour (grades don't change often)
-      storageUtils.cacheApiResponse(cacheKey, response.data, 60);
+      storageUtils.cacheApiResponse(cacheKey, gradesData, 60);
     } catch (error) {
       console.error('Error fetching grades:', error);
       setMessage(t('errorFetchingGrades'));
       setMessageType('error');
       
-      // If the error is auth-related, try to refresh token
+      // If the error is auth-related, try to refresh token using apiService
       if (error.response && error.response.status === 401) {
         try {
-          await axios.post('http://localhost:5001/api/auth/refresh-token', {}, {
-            withCredentials: true
-          });
+          await apiService.post('/auth/refresh-token', {});
           // Try again after refreshing token
           fetchGrades();
         } catch (refreshError) {
@@ -142,18 +143,24 @@ function RecordAttendance() {
       }
     }
   }, [t]);
+
   const fetchStudents = useCallback(async () => {
     if (!selectedGrade) return;
     
     try {
       setLoading(true);
       
+      // Check if we recently updated (within last 30 seconds)
+      if (lastUpdateTime && Date.now() - lastUpdateTime < 30000) {
+        setLoading(false);
+        return;
+      }
+      
       // Try to get from cache first
       const cacheKey = `students-by-grade-${selectedGrade}`;
       const cachedStudents = storageUtils.getCachedApiResponse(cacheKey);
       
       if (cachedStudents) {
-        // Use cached data
         const studentsWithAttendance = cachedStudents.map(student => ({
           ...student,
           status: 'Present' // Default status
@@ -161,52 +168,51 @@ function RecordAttendance() {
         
         setStudents(studentsWithAttendance);
         setAttendanceRecords(studentsWithAttendance.map(student => ({
-          studentId: student.id, // Use the UUID id field, not _id
+          studentId: student.id,
           status: 'Present'
         })));
         setLoading(false);
+        setLastUpdateTime(Date.now());
         return;
       }
+
+      // If not in cache, fetch from API using apiService
+      const studentsData = await apiService.get(`/students/byGrade/${selectedGrade}`);
       
-      // If not in cache, fetch from API
-      const response = await axios.get(`http://localhost:5001/api/students/byGrade/${selectedGrade}`, {
-        withCredentials: true
-      });
+      // Cache the response for longer (30 minutes since attendance doesn't change frequently)
+      storageUtils.cacheApiResponse(cacheKey, studentsData, 30);
       
-      // Cache the response (students don't change often within a session)
-      storageUtils.cacheApiResponse(cacheKey, response.data, 10); // Cache for 10 minutes
-      
-      const studentsWithAttendance = response.data.map(student => ({
+      const studentsWithAttendance = studentsData.map(student => ({
         ...student,
-        status: 'Present' // Default status
+        status: 'Present'
       }));
       
       setStudents(studentsWithAttendance);
       setAttendanceRecords(studentsWithAttendance.map(student => ({
-        studentId: student.id, // Use the UUID id field, not _id
+        studentId: student.id,
         status: 'Present'
       })));
+      setLastUpdateTime(Date.now());
     } catch (error) {
       console.error('Error fetching students:', error);
       setMessage(t('errorFetchingStudents'));
       setMessageType('error');
-        // Handle authentication errors
+      // Handle authentication errors
       if (error.response && error.response.status === 401) {
         try {
-          await axios.post('http://localhost:5001/api/auth/refresh-token', {}, {
-            withCredentials: true
-          });
-          // Try again after refreshing token
+          await apiService.post('/auth/refresh-token', {});
+          // Try fetching again after token refresh
           fetchStudents();
         } catch (refreshError) {
           console.error('Error refreshing token:', refreshError);
+          // Redirect to login if refresh fails
           window.location.href = '/login';
         }
       }
     } finally {
       setLoading(false);
     }
-  }, [selectedGrade, t]);
+  }, [selectedGrade, t, lastUpdateTime]);
 
   useEffect(() => {
     fetchGrades();
@@ -215,8 +221,34 @@ function RecordAttendance() {
   useEffect(() => {
     if (selectedGrade) {
       fetchStudents();
+      
+      // Set up polling interval with longer delay
+      const pollingInterval = setInterval(() => {
+        // Only fetch if the component is visible/active
+        if (document.visibilityState === 'visible') {
+          fetchStudents();
+        }
+      }, POLLING_INTERVAL);
+      
+      // Add visibility change listener
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          // Fetch when tab becomes visible if enough time has passed
+          if (!lastUpdateTime || Date.now() - lastUpdateTime > POLLING_INTERVAL) {
+            fetchStudents();
+          }
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(pollingInterval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
-  }, [selectedGrade, fetchStudents]);
+  }, [selectedGrade, fetchStudents, lastUpdateTime]);
+
   // Create debounced status change handler
   const handleStatusChange = useCallback((studentId, status) => {
     // Sanitize status input
@@ -255,6 +287,7 @@ function RecordAttendance() {
     );
     debouncedHandler();
   }, [markAll]);
+
   const handleSubmit = useCallback(async () => {
     try {
       setLoading(true);
@@ -263,8 +296,7 @@ function RecordAttendance() {
         date: new Date().toISOString().split('T')[0],
         grade: selectedGrade,
         records: attendanceRecords,      };
-      
-      // Use apiService instead of direct axios call
+        // Use apiService instead of direct axios call
       await apiService.post('/attendance', data);
       
       setMessage(t('attendanceRecordedSuccessfully'));
@@ -295,6 +327,7 @@ function RecordAttendance() {
       setLoading(false);
     }
   }, [attendanceRecords, selectedGrade, t]);
+
   // Memoize attendance stats for performance
   const attendanceStats = useMemo(() => {
     return {
@@ -450,8 +483,7 @@ function RecordAttendance() {
             </Box>
 
             <StyledTableContainer component={Paper} elevation={0} themeMode={themeMode}>
-              <Table stickyHeader>                <TableHead>
-                  <TableRow>
+              <Table stickyHeader>                <TableHead><TableRow>
                     <TableCell sx={{ 
                       fontWeight: 'bold',
                       color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
@@ -465,11 +497,11 @@ function RecordAttendance() {
                       backgroundColor: themeMode?.theme === 'dark' ? 'rgba(37, 42, 52, 0.9)' : 'white'
                     }}>
                       {t('Status')}
-                    </TableCell>
-                  </TableRow>
+                    </TableCell>                  </TableRow>
                 </TableHead>
-                <TableBody>                  {attendanceRecords.map((record) => {                    const student = students.find((s) => s.id === record.studentId);
-                    return (                      <TableRow 
+                <TableBody>{attendanceRecords.map((record) => {
+                    const student = students.find((s) => s.id === record.studentId);
+                    return (<TableRow 
                         key={record.studentId}
                         sx={{ 
                           '&:nth-of-type(odd)': { 

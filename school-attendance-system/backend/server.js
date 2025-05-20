@@ -120,13 +120,12 @@ const csrfOptions = {
     return req.ip || '';
   },
 
-  // Cookie configuration
-  cookieName: 'csrf-token', // Updated for development (remove __Host- prefix)
+  // Cookie configuration  cookieName: 'csrf-token', // Updated for development (remove __Host- prefix)
   headerName: 'X-CSRF-Token', // Explicitly define the header name
   cookieOptions: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    secure: true, // Required for SameSite=None
+    sameSite: 'none', // Allow cross-site cookies
     path: '/'
   },
     // Other settings

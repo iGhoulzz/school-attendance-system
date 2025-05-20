@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -52,33 +52,64 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
   // Get token from URL search params
   const searchParams = new URLSearchParams(location.search);
   const token = searchParams.get('token');
-  const isResetMode = !!token;const handleRequestReset = async (e) => {
+  const isResetMode = !!token;
+  const handleRequestReset = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    
+    // Validate API service
+    if (!apiService?.post || typeof apiService.post !== 'function') {
+      setError('System error: API service not properly initialized');
+      setLoading(false);
+      return;
+    }
 
     try {
-      // Use apiService instead of direct axios calls
-      await apiService.post('/auth/request-reset', { email });
+      // First get a fresh CSRF token
+      if (typeof apiService.fetchCsrfToken === 'function') {
+        await apiService.fetchCsrfToken();
+      }
+      
+      // Now make the request with the fresh token
+      await apiService.post('/auth/request-reset', { 
+        email 
+      }, {
+        refreshCsrf: true 
+      });
+      
       setSuccess(t('resetLinkSent'));
       setEmail('');
     } catch (err) {
       console.error('Reset request error:', err);
       
-      // Enhanced error handling
       if (err.message === 'Network Error') {
         setError('Connection issue detected. Please try again.');
         console.error('Network error during reset request - this might be a CORS issue.');
+      } else if (err.response?.status === 403) {
+        // Retry logic for CSRF token errors
+        try {
+          await apiService.fetchCsrfToken();
+          await apiService.post('/auth/request-reset', { email }, { refreshCsrf: true });
+          setSuccess(t('resetLinkSent'));
+          setEmail('');
+        } catch (retryErr) {
+          console.error('Retry failed:', retryErr);
+          setError('Security validation failed. Please refresh the page and try again.');
+        }
       } else {
         setError(err.response?.data?.message || t('errorRequestingReset'));
       }
     } finally {
       setLoading(false);
     }
-  };  const handleResetPassword = async (e) => {
+  };
+
+  const handleResetPassword = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       setError(t('passwordsDoNotMatch'));
@@ -88,11 +119,25 @@ const ResetPassword = () => {
     setLoading(true);
     setError('');
 
+    // Validate API service
+    if (!apiService?.post || typeof apiService.post !== 'function') {
+      setError('System error: API service not properly initialized');
+      setLoading(false);
+      return;
+    }
+    
     try {
-      // Use apiService instead of direct axios calls
+      // Get fresh CSRF token
+      if (typeof apiService.fetchCsrfToken === 'function') {
+        await apiService.fetchCsrfToken();
+      }
+      
+      // Make the request with fresh token
       await apiService.post('/auth/reset-password', {
         token,
         newPassword
+      }, {
+        refreshCsrf: true
       });
       
       setSuccess(t('passwordResetSuccess'));
@@ -102,10 +147,22 @@ const ResetPassword = () => {
     } catch (err) {
       console.error('Password reset error:', err);
       
-      // Enhanced error handling
       if (err.message === 'Network Error') {
         setError('Connection issue detected. Please try again.');
         console.error('Network error during password reset - this might be a CORS issue.');
+      } else if (err.response?.status === 403) {
+        // CSRF token issue, try one more time
+        try {
+          await apiService.fetchCsrfToken();
+          await apiService.post('/auth/reset-password', { token, newPassword }, { refreshCsrf: true });
+          setSuccess(t('passwordResetSuccess'));
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
+        } catch (retryErr) {
+          console.error('Retry failed:', retryErr);
+          setError('Security validation failed. Please refresh the page and try again.');
+        }
       } else if (err.response?.status === 400) {
         setError(t('invalidOrExpiredToken'));
       } else {
@@ -114,7 +171,27 @@ const ResetPassword = () => {
     } finally {
       setLoading(false);
     }
-  };  return (
+  };
+
+  // Add loading timeout safety
+  useEffect(() => {
+    let timeoutId;
+    
+    if (loading) {
+      timeoutId = setTimeout(() => {
+        setLoading(false);
+        setError('Request timed out. Please try again.');
+      }, 15000); // 15 second timeout
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [loading]);
+
+  return (
     <ResetContainer themeContext={themeContext}>
       <StyledPaper themeContext={themeContext}>
         <Typography variant="h5" gutterBottom align="center" fontWeight="bold">

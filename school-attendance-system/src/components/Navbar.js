@@ -136,19 +136,33 @@ const LanguageButton = styled(Button, {
 })(({ theme, themeMode }) => ({
   textTransform: 'none',
   borderRadius: 8,
-  padding: '6px 12px',
-  fontSize: '0.875rem',
+  padding: '8px 16px',
+  fontSize: '0.95rem',
+  fontWeight: 500,
   color: themeMode?.theme === 'dark' ?
-    themes.dark.colors.text.primary :
+    '#ffffff' :
     'inherit',
   backgroundColor: themeMode?.theme === 'dark' ? 
-    'rgba(255, 255, 255, 0.05)' : 
+    'rgba(77, 125, 255, 0.15)' : 
     'rgba(0, 0, 0, 0.05)',
+  border: themeMode?.theme === 'dark' ? '1px solid rgba(77, 125, 255, 0.3)' : 'none',
+  minWidth: '120px',
+  transition: 'all 0.2s ease',
+  boxShadow: themeMode?.theme === 'dark' ? '0 2px 8px rgba(0, 0, 0, 0.2)' : 'none',
   '&:hover': {
-    backgroundColor: themeMode?.theme === 'dark' ? 
-      'rgba(255, 255, 255, 0.1)' : 
+    backgroundColor: themeMode?.theme === 'dark' ?
+      'rgba(77, 125, 255, 0.25)' : 
       'rgba(0, 0, 0, 0.1)',
-  }
+    transform: 'translateY(-1px)',
+    boxShadow: themeMode?.theme === 'dark' ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.1)',
+  },
+  '& .MuiButton-endIcon': {
+    marginLeft: 4,
+    transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  },
+  '& .MuiButton-startIcon': {
+    marginRight: 6,
+  },
 }));
 
 function HideOnScroll({ children }) {
@@ -321,11 +335,16 @@ function Navbar() {
                   />
                 </ThemeToggle>
                 
-                {/* Language Selector */}
-                <LanguageButton
+                {/* Language Selector */}                <LanguageButton
                   onClick={handleLanguageMenuOpen}
-                  endIcon={<ArrowDownIcon />}
-                  startIcon={<TranslateIcon />}
+                  endIcon={<ArrowDownIcon sx={{ 
+                    color: themeMode?.theme === 'dark' ? '#ffffff' : undefined,
+                    transition: 'transform 0.2s ease',
+                    transform: Boolean(languageMenu) ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }} />}
+                  startIcon={<TranslateIcon sx={{ 
+                    color: themeMode?.theme === 'dark' ? '#ffffff' : undefined
+                  }} />}
                   themeMode={themeMode}
                 >
                   {i18n.language === 'en' ? 'English' : 'العربية'}
@@ -340,44 +359,87 @@ function Navbar() {
                   {t('login')}
                 </LoginButton>
               </NavLinks>
-            )}
-              <Menu
+            )}              <Menu
               anchorEl={languageMenu}
               open={Boolean(languageMenu)}
               onClose={handleLanguageMenuClose}
               anchorOrigin={{
                 vertical: 'bottom',
-                horizontal: 'right',
+                horizontal: 'center',
               }}
               transformOrigin={{
                 vertical: 'top',
-                horizontal: 'right',
+                horizontal: 'center',
               }}
               PaperProps={{
                 sx: { 
                   mt: 1.5, 
                   borderRadius: 2,
-                  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)',
+                  overflow: 'visible',
+                  filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.3))',
+                  boxShadow: themeMode?.theme === 'dark' 
+                    ? '0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)' 
+                    : '0 8px 24px rgba(0, 0, 0, 0.1)',
                   backgroundColor: themeMode?.theme === 'dark' 
-                    ? themes.dark.colors.background.paper 
+                    ? 'rgba(37, 42, 52, 0.98)'
                     : 'white',
                   color: themeMode?.theme === 'dark'
-                    ? themes.dark.colors.text.primary
+                    ? '#ffffff'
                     : 'inherit',
+                  backdropFilter: 'blur(12px)',
+                  border: themeMode?.theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+                  '&:before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'absolute',
+                    top: 0,
+                    left: '50%',
+                    width: 10,
+                    height: 10,
+                    bgcolor: themeMode?.theme === 'dark' ? 'rgba(37, 42, 52, 0.98)' : 'white',
+                    transform: 'translate(-50%, -50%) rotate(45deg)',
+                    borderTop: themeMode?.theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+                    borderLeft: themeMode?.theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+                    zIndex: 0,
+                  },
+                  '& .MuiMenuItem-root': {
+                    padding: '12px 24px',
+                    minWidth: '150px',
+                    fontSize: '0.95rem',
+                    transition: 'all 0.2s ease',
+                  },
                   '& .MuiMenuItem-root:hover': {
                     backgroundColor: themeMode?.theme === 'dark'
-                      ? 'rgba(255, 255, 255, 0.05)'
-                      : 'rgba(0, 0, 0, 0.04)',
+                      ? 'rgba(77, 125, 255, 0.18)'
+                      : 'rgba(0, 0, 0, 0.05)',
+                    transform: 'translateX(4px)',
                   }
                 }
               }}
-            >
-              <MenuItem 
+            >              <MenuItem 
                 onClick={() => changeLanguage('en')}
                 selected={i18n.language === 'en'}
                 sx={{
                   backgroundColor: i18n.language === 'en' && themeMode?.theme === 'dark' ? 
-                    'rgba(77, 125, 255, 0.1)' : undefined
+                    'rgba(77, 125, 255, 0.25)' : i18n.language === 'en' ? 'rgba(25, 118, 210, 0.08)' : undefined,
+                  color: i18n.language === 'en' && themeMode?.theme === 'dark' ? '#ffffff' : undefined,
+                  fontWeight: i18n.language === 'en' ? 600 : 400,
+                  borderRadius: 1,
+                  position: 'relative',
+                  '&:hover': {
+                    backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.3)' : 'rgba(25, 118, 210, 0.12)',
+                  },
+                  '&.Mui-selected::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 4,
+                    height: 4,
+                    backgroundColor: themeMode?.theme === 'dark' ? '#4d7dff' : '#1976d2',
+                    borderRadius: '50%',
+                  }
                 }}
               >
                 English
@@ -387,7 +449,25 @@ function Navbar() {
                 selected={i18n.language === 'ar'}
                 sx={{
                   backgroundColor: i18n.language === 'ar' && themeMode?.theme === 'dark' ? 
-                    'rgba(77, 125, 255, 0.1)' : undefined
+                    'rgba(77, 125, 255, 0.25)' : i18n.language === 'ar' ? 'rgba(25, 118, 210, 0.08)' : undefined,
+                  color: i18n.language === 'ar' && themeMode?.theme === 'dark' ? '#ffffff' : undefined,
+                  fontWeight: i18n.language === 'ar' ? 600 : 400,
+                  borderRadius: 1,
+                  position: 'relative',
+                  '&:hover': {
+                    backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.3)' : 'rgba(25, 118, 210, 0.12)',
+                  },
+                  '&.Mui-selected::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 8,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    width: 4,
+                    height: 4,
+                    backgroundColor: themeMode?.theme === 'dark' ? '#4d7dff' : '#1976d2',
+                    borderRadius: '50%',
+                  }
                 }}
               >
                 العربية

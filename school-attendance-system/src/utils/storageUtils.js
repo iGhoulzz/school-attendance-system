@@ -1,4 +1,6 @@
 // Utility to safely handle localStorage operations
+import { logger } from './logger';
+
 const isStorageAvailable = () => {
   try {
     // Check if we're in a browser context
@@ -69,7 +71,7 @@ const getJsonValue = (value, defaultValue) => {
   }
 };
 
-export const storageUtils = {
+const storageUtils = {
   // Basic storage operations
   getItem: (key) => {
     try {
@@ -273,7 +275,7 @@ export const storageUtils = {
       return storageUtils.clearNamespace('api-cache');
     }
   },
-    // Auth related helpers
+  // Auth related helpers
   getToken: () => {
     try {
       if (!checkStorageAvailable()) return null;
@@ -283,11 +285,20 @@ export const storageUtils = {
       return null;
     }
   },
-  clearAuth: () => {
+  
+  getAuthToken: () => {
+    try {
+      if (!checkStorageAvailable()) return null;
+      return localStorage.getItem('token');
+    } catch (e) {
+      console.warn('Error getting auth token:', e);
+      return null;
+    }
+  },  clearAuth: () => {
     try {
       if (!checkStorageAvailable()) return false;
-      // We don't clear the token from localStorage as it's now in HTTP-only cookies
-      // But we do clear other auth-related items
+      // Clear token and other auth-related items
+      localStorage.removeItem('token');
       localStorage.removeItem('role');
       localStorage.removeItem('name');
       localStorage.removeItem('userId');
@@ -375,6 +386,8 @@ export const storageUtils = {
     } catch (e) {
       console.warn('Error clearing user info:', e);
       return false;
-    }
-  },
+    }  },
 };
+
+// Export as default to maintain consistent export pattern
+export default storageUtils;

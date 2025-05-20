@@ -2,13 +2,14 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
-import { storageUtils } from '../utils/storageUtils';
+import DOMPurify from 'dompurify'; // Add DOMPurify for sanitizing user content
+import storageUtils from '../utils/storageUtils';
 import { styled } from '@mui/material/styles';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ThemeContext, ThemeProvider } from '../utils/themeContext';
+import { ThemeContext } from '../utils/themeContext';
 import apiService from '../services/apiService';
 import { logout } from '../services/apiServiceWrapper';
+import { logger } from '../utils/logger'; // Import secure logger
 import {
   AppBar,
   Toolbar,
@@ -257,24 +258,26 @@ function Dashboard() {
       absent: 0
     },
     recentActivity: []
-  });
-  const [notifications, setNotifications] = useState([]);
+  });  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState(null);
-  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);  const navigate = useNavigate();
-    // Handle logout by clearing storage and navigating to login
+  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);  
+  
+  const navigate = useNavigate();
+  
+  // Handle logout by clearing storage and navigating to login
   const handleLogout = useCallback(async () => {
     try {
       // Call the logout function from apiServiceWrapper
       await logout();
     } catch (error) {
-      console.error('Error during logout:', error);
+      logger.error('Error during logout:', error);
     }
     
     // Clear local storage data
     storageUtils.clearAuth();
-    navigate('/login');  }, [navigate]);  
-  
+    navigate('/login');
+  }, [navigate]);  
   // Fetch dashboard statistics
   const fetchDashboardStats = useCallback(async () => {
     try {
@@ -283,42 +286,50 @@ function Dashboard() {
       const response = await apiService.get('/attendance/dashboard-stats');
       setDashboardStats(response);
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      logger.error('Error fetching dashboard stats:', error);
       // If unauthorized, log out
       if (error.response && error.response.status === 401) {
         handleLogout();
       }
     } finally {
       setLoading(false);
-    }
-  }, [handleLogout]);  
+    }  }, [handleLogout]);
   
   const fetchNotifications = useCallback(async () => {
     try {
       const response = await apiService.get('/notifications');
       setNotifications(response);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      logger.error('Error fetching notifications:', error);
+      
+      // If unauthorized, log out
+      if (error.response && error.response.status === 401) {
+        handleLogout();
+      }
     }
-  };
+  }, [handleLogout]);
   
-  const clearAllNotifications = async () => {
+  const clearAllNotifications = useCallback(async () => {
     try {
       await apiService.delete('/notifications/clear-all');
-      
-      // Update notifications list (should be empty now)
       setNotifications([]);
-      handleNotificationsClose();
     } catch (error) {
-      console.error('Error clearing notifications:', error);
+      logger.error('Error clearing notifications:', error);
+      
+      // If unauthorized, log out
+      if (error.response && error.response.status === 401) {
+        handleLogout();
+      }
     }
-  };
-
+  }, [handleLogout]);
+  
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 60000); // Refresh every minute
     return () => clearInterval(interval);
-  }, []);  const handleNotificationClick = async (notification) => {
+  }, [fetchNotifications]);
+  
+  const handleNotificationClick = async (notification) => {
     try {
       // Set selected notification and open dialog
       setSelectedNotification(notification);
@@ -330,7 +341,14 @@ function Dashboard() {
       // Update notifications list
       fetchNotifications();
     } catch (error) {
-      console.error('Error handling notification:', error);
+      logger.error('Error handling notification:', error);
+      // Add user-friendly error handling
+      if (error.response) {
+        // Handle specific HTTP error responses
+        if (error.response.status === 401) {
+          handleLogout(); // Unauthorized - log out
+        }
+      }
     }
   };
   
@@ -367,25 +385,25 @@ function Dashboard() {
       // Cleanup
       return () => {
         clearTimeout(fetchTimer);
-        clearInterval(refreshInterval);
-      };
+        clearInterval(refreshInterval);      };
     }
-  }, [selectedView, fetchDashboardStats]);  useEffect(() => {
+  }, [selectedView, fetchDashboardStats]);
+  
+  useEffect(() => {
     const validateToken = async () => {
       try {
         // Use apiService to validate the token
         await apiService.get('/auth/validate');
-        
         const role = storageUtils.getItem('role');
         const name = storageUtils.getItem('name');
         setUserName(name);
         setUserRole(role);
       } catch (error) {
-        console.error('Token validation failed:', error);
+        // If token validation fails, redirect to login
+        logger.error('Token validation failed:', error);
         handleLogout();
       }
     };
-
     validateToken();
     
     // Handle responsive drawer
@@ -631,52 +649,60 @@ function Dashboard() {
             </Typography>
           </Box>          <Box sx={{ display: 'flex', alignItems: 'center', mr: { xs: 0, sm: 0 }, maxWidth: '50%' }}>            <Box sx={{ display: 'flex', mr: 0.5 }}>
               <Tooltip title={t('notifications')}>
-                <IconButton 
-                  size="small"
-                  color="inherit" 
-                  onClick={handleNotificationsOpen}                  sx={{
-                    background: Boolean(notifications.length) ? 'rgba(38, 207, 172, 0.05)' : 'transparent',
-                    borderRadius: '6px',
-                    padding: '5px',
-                    minWidth: '32px',
-                    minHeight: '32px',
-                    width: '32px',
-                    height: '32px',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      background: Boolean(notifications.length) ? 'rgba(38, 207, 172, 0.1)' : 'rgba(0,0,0,0.04)',
-                      boxShadow: '0 1px 3px rgba(38, 207, 172, 0.1)',
-                      transform: 'translateY(-1px)'
-                    }
-                  }}
-                >                  <StyledBadge badgeContent={notifications.length} color="primary">
-                    <NotificationsIcon fontSize="small" sx={{ fontSize: '1.3rem' }} />
-                  </StyledBadge>
-                </IconButton>
+                <span>
+                  <IconButton 
+                    size="small"
+                    color="inherit" 
+                    onClick={handleNotificationsOpen}
+                    disabled={notifications.length === 0}
+                    sx={{
+                      background: Boolean(notifications.length) ? 'rgba(38, 207, 172, 0.05)' : 'transparent',
+                      borderRadius: '6px',
+                      padding: '5px',
+                      minWidth: '32px',
+                      minHeight: '32px',
+                      width: '32px',
+                      height: '32px',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        background: Boolean(notifications.length) ? 'rgba(38, 207, 172, 0.1)' : 'rgba(0,0,0,0.04)',
+                        boxShadow: '0 1px 3px rgba(38, 207, 172, 0.1)',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
+                  >
+                    <StyledBadge badgeContent={notifications.length} color="primary">
+                      <NotificationsIcon fontSize="small" sx={{ fontSize: '1.3rem' }} />
+                    </StyledBadge>
+                  </IconButton>
+                </span>
               </Tooltip>
             </Box>
             <Box sx={{ display: 'flex', mr: 0.5 }}>
               <Tooltip title={t('logout')}>
-                <IconButton 
-                  size="small"
-                  color="inherit" 
-                  onClick={handleLogout}                  sx={{
-                    borderRadius: '6px',
-                    padding: '5px',
-                    minWidth: '32px',
-                    minHeight: '32px',
-                    width: '32px',
-                    height: '32px',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      background: 'rgba(239, 83, 80, 0.1)',
-                      boxShadow: '0 1px 3px rgba(239, 83, 80, 0.1)',
-                      transform: 'translateY(-1px)'
-                    }
-                  }}
-                >
-                  <LogoutIcon fontSize="small" sx={{ fontSize: '1.3rem' }} color="error" />
-                </IconButton>
+                <span>
+                  <IconButton 
+                    size="small"
+                    color="inherit" 
+                    onClick={handleLogout}
+                    sx={{
+                      borderRadius: '6px',
+                      padding: '5px',
+                      minWidth: '32px',
+                      minHeight: '32px',
+                      width: '32px',
+                      height: '32px',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        background: 'rgba(239, 83, 80, 0.1)',
+                        boxShadow: '0 1px 3px rgba(239, 83, 80, 0.1)',
+                        transform: 'translateY(-1px)'
+                      }
+                    }}
+                  >
+                    <LogoutIcon fontSize="small" sx={{ fontSize: '1.3rem' }} color="error" />
+                  </IconButton>
+                </span>
               </Tooltip>
             </Box><Menu
               anchorEl={notificationsAnchorEl}
@@ -713,22 +739,25 @@ function Dashboard() {
                   {t('notifications')}
                 </Typography>
                 {notifications.length > 0 && (                  <Tooltip title={t('clearAll')}>
-                    <IconButton 
-                      size="small" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearAllNotifications();
-                      }}
-                      sx={{ 
-                        color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'inherit',
-                        p: 0.5,
-                        '&:hover': {
-                          backgroundColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
-                        }
-                      }}
-                    >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
+                    <span>
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          clearAllNotifications();
+                        }}
+                        disabled={!notifications.length}
+                        sx={{ 
+                          color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'inherit',
+                          p: 0.5,
+                          '&:hover': {
+                            backgroundColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.04)'
+                          }
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </span>
                   </Tooltip>
                 )}
               </Box>
@@ -744,8 +773,7 @@ function Dashboard() {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       maxWidth: '100%',
-                      color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'inherit'
-                    }}>                      {notification.title}
+                      color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'inherit'                    }}>                      {DOMPurify.sanitize(notification.title)}
                     </Typography>
                     <Typography variant="caption" sx={{ 
                       display: '-webkit-box',
@@ -753,9 +781,8 @@ function Dashboard() {
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary'
-                    }}>
-                      {notification.message.substring(0, 30)}
+                      color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'text.secondary'                    }}>
+                      {DOMPurify.sanitize(notification.message.substring(0, 30))}
                       {notification.message.length > 30 ? '...' : ''}
                     </Typography>
                     <Typography variant="caption" sx={{ 
@@ -892,9 +919,8 @@ function Dashboard() {
                 pb: 1
               }}>
                 <Typography variant="h6" fontWeight="bold" sx={{ 
-                  color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'inherit'
-                }}>
-                  {selectedNotification.title}
+                  color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.95)' : 'inherit'                }}>
+                  {DOMPurify.sanitize(selectedNotification.title)}
                 </Typography>
                 <Typography variant="caption" sx={{ 
                   display: 'block',
@@ -906,9 +932,8 @@ function Dashboard() {
               </DialogTitle>              <DialogContent sx={{ py: 2 }}>
                 <Typography variant="body1" sx={{ 
                   color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : 'inherit',
-                  lineHeight: 1.6
-                }}>
-                  {selectedNotification.message}
+                  lineHeight: 1.6                }}>
+                  {DOMPurify.sanitize(selectedNotification.message)}
                 </Typography>
               </DialogContent>              <DialogActions sx={{ px: 3, pb: 2 }}>                <Button 
                   onClick={handleDialogClose} 

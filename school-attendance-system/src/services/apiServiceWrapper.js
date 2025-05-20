@@ -4,8 +4,9 @@
 import axios from 'axios';
 import DOMPurify from 'dompurify';
 import cacheManager from '../utils/cacheManager';
-import { storageUtils } from '../utils/storageUtils';
+import storageUtils from '../utils/storageUtils';
 import apiService from './apiService';
+import { logger } from '../utils/logger'; // Import secure logger
 
 // Use the environment variable or default to localhost for development
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
@@ -20,15 +21,23 @@ const login = async (credentials) => {
     // Sanitize credentials to prevent XSS
     const sanitizedCredentials = sanitizeData(credentials);
     
-    // First fetch the CSRF token
-    await apiService.get('/csrf-token', { useCache: false });
-    
-    // Make login request using apiService which includes the CSRF token
+    // Ensure CSRF token is fetched first
+    await apiService.fetchCsrfToken();
+
+    // Make login request
     const response = await apiService.post('/auth/login', sanitizedCredentials);
     
-    return response.data;
+    // Store user info in local storage
+    if (response.user) {
+      storageUtils.setUser(response.user);
+    }
+    if (response.token) {
+      storageUtils.setToken(response.token);
+    }
+    
+    return response;
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error:', error);
     throw error;
   }
 };
@@ -40,20 +49,20 @@ const login = async (credentials) => {
 const logout = async () => {
   try {
     // First fetch the CSRF token
-    await apiService.get('/csrf-token', { useCache: false });
-    
-    // Use apiService to include CSRF token
+    await apiService.fetchCsrfToken();
+      
+    // Call logout endpoint
     const response = await apiService.post('/auth/logout', {});
     
     // Clear any cached data
-    cacheManager.clearAll();
+    cacheManager.clear();
     
     // Clear user info
-    storageUtils.clearUserInfo();
+    storageUtils.clearAuth();
     
-    return response.data;
+    return response;
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error:', error);
     throw error;
   }
 };
@@ -87,21 +96,25 @@ const sanitizeData = (data) => {
   return data;
 };
 
-// Create an apiService wrapper that forwards all apiService methods
-// while also providing our custom wrapper methods
+// Create a wrapper that forwards all apiService methods
 const apiServiceWrapper = {
-  // Forward all the original apiService methods
-  get: apiService.get.bind(apiService),
-  post: apiService.post.bind(apiService),
-  put: apiService.put.bind(apiService),
-  delete: apiService.delete.bind(apiService),
-  upload: apiService.upload.bind(apiService),
-  fetchCsrfToken: apiService.fetchCsrfToken,
-  // Our custom wrapper methods
+  // Forward all original apiService methods using arrow functions
+  // This avoids binding issues during module initialization
+  get: (...args) => apiService.get(...args),
+  post: (...args) => apiService.post(...args),
+  put: (...args) => apiService.put(...args),
+  delete: (...args) => apiService.delete(...args),
+  upload: (...args) => apiService.upload(...args),
+  fetchCsrfToken: (...args) => apiService.fetchCsrfToken(...args),
+  
+  // Custom wrapper methods
   login,
   logout,
   sanitizeData
 };
 
-// Export for ES modules
+// Export named functions for direct imports
+export { login, logout, sanitizeData };
+
+// Export full wrapper as default
 export default apiServiceWrapper;

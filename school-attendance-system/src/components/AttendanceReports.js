@@ -53,14 +53,18 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 // Import the spinner
 import ClipLoader from 'react-spinners/ClipLoader';
 
-const ReportsContainer = styled(Box)(({ theme, themeMode }) => ({
+const ReportsContainer = styled(Box, {
+  shouldForwardProp: (prop) => !['themeMode'].includes(prop)
+})(({ theme, themeMode }) => ({
   padding: theme.spacing(3),
   width: '100%',
   background: themeMode?.theme === 'dark' ? themes.dark.colors.background.main : themes.light.colors.background.main,
   color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary,
 }));
 
-const ReportsHeader = styled(Box)(({ theme, themeMode }) => ({
+const ReportsHeader = styled(Box, {
+  shouldForwardProp: (prop) => !['themeMode'].includes(prop)
+})(({ theme, themeMode }) => ({
   display: 'flex',
   flexDirection: 'column',
   marginBottom: theme.spacing(4),
@@ -81,7 +85,9 @@ const StatsContainer = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(4),
 }));
 
-const StatsCard = styled(Card)(({ theme, bgcolor = 'primary.main', themeMode }) => ({
+const StatsCard = styled(Card, {
+  shouldForwardProp: (prop) => !['themeMode', 'bgcolor'].includes(prop)
+})(({ theme, bgcolor = 'primary.main', themeMode }) => ({
   background: themeMode?.theme === 'dark' 
     ? themes.dark.colors.card[bgcolor.split('.')[0] === 'primary' ? 'statCard1' : bgcolor.split('.')[0] === 'secondary' ? 'statCard2' : 'statCard3']
     : `linear-gradient(135deg, ${theme.palette[bgcolor.split('.')[0]][bgcolor.split('.')[1]]} 0%, ${theme.palette[bgcolor.split('.')[0]][Number(bgcolor.split('.')[1]) + 100 || bgcolor.split('.')[1]]} 100%)`,
@@ -93,7 +99,9 @@ const StatsCard = styled(Card)(({ theme, bgcolor = 'primary.main', themeMode }) 
     : '0 8px 20px rgba(0, 0, 0, 0.1)',
 }));
 
-const ReportTable = styled(TableContainer)(({ theme, themeMode }) => ({
+const ReportTable = styled(TableContainer, {
+  shouldForwardProp: (prop) => !['themeMode'].includes(prop)
+})(({ theme, themeMode }) => ({
   maxHeight: '65vh',
   marginTop: theme.spacing(3),
   borderRadius: 16,
@@ -115,7 +123,9 @@ const ReportTable = styled(TableContainer)(({ theme, themeMode }) => ({
   },
 }));
 
-const StatusChip = styled(Chip)(({ status, theme, themeMode }) => {
+const StatusChip = styled(Chip, {
+  shouldForwardProp: (prop) => !['themeMode', 'status'].includes(prop)
+})(({ status, theme, themeMode }) => {
   let color = 'primary';
   if (status === 'Absent') color = 'error';
   if (status === 'Late') color = 'warning';
@@ -158,18 +168,10 @@ function AttendanceReports() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [confirmMessage, setConfirmMessage] = useState('');
-
   const fetchAttendanceData = useCallback(async (selectedDate) => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found');
-        setMessage(t('mustBeLoggedInToViewReports'));
-        setLoading(false);
-        return;
-      }
-
+      
       // Format the date for the API - ensure it's in the correct format
       // Use a more robust date formatting to avoid timezone issues
       const formattedDate = selectedDate instanceof Date 
@@ -178,10 +180,10 @@ function AttendanceReports() {
 
       console.log('Fetching attendance for date:', formattedDate);
       
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      const response = await axios.get(`http://localhost:5001/api/attendance?date=${formattedDate}`, config);
-      const fetchedData = response.data; 
-
+      // Use apiService instead of direct axios call with localStorage token
+      const response = await apiService.get(`/attendance?date=${formattedDate}`);
+      const fetchedData = response; 
+      
       console.log('Fetched attendance data:', fetchedData);
 
       if (Array.isArray(fetchedData) && fetchedData.length > 0) {
@@ -212,7 +214,7 @@ function AttendanceReports() {
     } finally {
       setLoading(false);
     }
-  }, [t]);  const debouncedFetchAttendanceData = useCallback((selectedDate) => {
+  }, [t]);const debouncedFetchAttendanceData = useCallback((selectedDate) => {
     // Use the debounceUtils helper for consistent implementation
     const debouncedSearchHandler = createDebouncedClickHandler(
       () => fetchAttendanceData(selectedDate),
@@ -233,16 +235,15 @@ function AttendanceReports() {
 
   useEffect(() => {
     fetchAttendanceData(date);
-  }, [date, fetchAttendanceData]);
-  const handleViewStudent = async (studentId) => {
+  }, [date, fetchAttendanceData]);  const handleViewStudent = async (studentId) => {
     setLoading(true);
     if (studentCache[studentId]) {
       setSelectedStudent(studentCache[studentId]);
       setLoading(false);
     } else {
       try {
-        // Use API service rather than direct axios calls with localStorage tokens
-        const { data } = await useApiData.get(`/students/by-id/${studentId}`);
+        // Use apiService directly instead of useApiData.get
+        const data = await apiService.get(`/students/by-id/${studentId}`);
         
         // Sanitize data with DOMPurify
         const sanitizedData = DOMPurify.sanitize(JSON.stringify(data));
@@ -284,21 +285,14 @@ function AttendanceReports() {
       await handleSendAlerts();
     }
   };
-
   const handleClearAttendance = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('No token found');
-        setMessage(t('mustBeLoggedInToPerformAction'));
-        setLoading(false);
-        return;
-      }
-
       const formattedDate = date.toISOString().split('T')[0];
-      const config = { headers: { Authorization: `Bearer ${token}` } };
-      await axios.delete(`http://localhost:5001/api/attendance?date=${formattedDate}`, config);
+      
+      // Use apiService instead of direct token access and axios
+      await apiService.delete(`/attendance?date=${formattedDate}`);
+      
       setMessage(t('attendanceRecordsDeletedSuccessfully'));
       setAttendanceEntries([]);
       setAttendanceData([]);
@@ -551,51 +545,56 @@ function AttendanceReports() {
               }
             }}
           />
-          
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-start' } }}>            <Tooltip title={t('GeneratePDF')}>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<PdfIcon />}
-                onClick={debouncedGeneratePDF}
-                disabled={loading || attendanceData.length === 0}
-                sx={{
-                  backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
-                  color: '#fff',
-                  '&:hover': {
-                    backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.9)' : undefined
-                  }
-                }}
-              >
-                {t('GeneratePDF')}
-              </Button>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { xs: 'center', sm: 'flex-start' } }}>            <Tooltip title={t('GeneratePDF')}>
+              <span>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="primary"
+                  startIcon={<PdfIcon />}
+                  onClick={debouncedGeneratePDF}
+                  disabled={loading || attendanceData.length === 0}
+                  sx={{
+                    backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
+                    color: '#fff',
+                    '&:hover': {
+                      backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.9)' : undefined
+                    }
+                  }}
+                >
+                  {t('GeneratePDF')}
+                </Button>
+              </span>
             </Tooltip>
 
             <Tooltip title={t('SendAlerts')}>
-              <Button
-                variant="outlined"
-                size="small"
-                color="primary"
-                startIcon={<EmailIcon />}
-                onClick={debouncedPromptSendAlerts}
-                disabled={loading || absentStudentsCount === 0}
-                sx={{
-                  borderColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
-                  color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
-                  '&:hover': {
-                    borderColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.9)' : undefined,
-                    backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.1)' : undefined
-                  }
-                }}
-              >
-                {t('SendAlerts')}
-              </Button>
+              <span>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="primary"
+                  startIcon={<EmailIcon />}
+                  onClick={debouncedPromptSendAlerts}
+                  disabled={loading || absentStudentsCount === 0}
+                  sx={{
+                    borderColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
+                    color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
+                    '&:hover': {
+                      borderColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.9)' : undefined,
+                      backgroundColor: themeMode?.theme === 'dark' ? 'rgba(77, 125, 255, 0.1)' : undefined
+                    }
+                  }}
+                >
+                  {t('SendAlerts')}
+                </Button>
+              </span>
             </Tooltip>            <Tooltip title={t('Refresh')}>
-              <IconButton 
-                color="primary"
-                onClick={() => fetchAttendanceData(date)}
-                disabled={loading}
-                size="small"
+              <span>
+                <IconButton 
+                  color="primary"
+                  onClick={() => fetchAttendanceData(date)}
+                  disabled={loading}
+                  size="small"
                 sx={{
                   color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
                   '&:hover': {
@@ -605,14 +604,14 @@ function AttendanceReports() {
               >
                 <RefreshIcon />
               </IconButton>
-            </Tooltip>
-
-            <Tooltip title={t('ClearAttendance')}>
-              <IconButton
-                color="error"
-                onClick={debouncedPromptClearAttendance}
-                disabled={loading || attendanceData.length === 0}
-                size="small"
+            </span>
+            </Tooltip>            <Tooltip title={t('ClearAttendance')}>
+              <span>
+                <IconButton
+                  color="error"
+                  onClick={debouncedPromptClearAttendance}
+                  disabled={loading || attendanceData.length === 0}
+                  size="small"
                 sx={{
                   color: themeMode?.theme === 'dark' ? '#f44336' : undefined,
                   '&:hover': {
@@ -622,6 +621,7 @@ function AttendanceReports() {
               >
                 <DeleteIcon />
               </IconButton>
+            </span>
             </Tooltip>
           </Box>
         </Box>
@@ -714,12 +714,11 @@ function AttendanceReports() {
                       <Typography variant="body2" color="text.secondary">
                         {t('RecordedBy')}: {teacherGroup.teacherName}
                       </Typography>
-                    </Box>
-
-                    <ReportTable component={Paper} elevation={0} themeMode={themeMode}>
-                      <Table stickyHeader>                        <TableHead>
+                    </Box>                    <ReportTable component={Paper} elevation={0} themeMode={themeMode}>
+                      <Table stickyHeader>
+                        <TableHead>
                           <TableRow>
-                            <TableCell sx={{ 
+                            <TableCell sx={{
                               fontWeight: 'bold',
                               color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
                               backgroundColor: themeMode?.theme === 'dark' ? 'rgba(37, 42, 52, 0.9)' : 'white'
@@ -737,7 +736,8 @@ function AttendanceReports() {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {teacherGroup.records && teacherGroup.records.map((record, rIndex) => (                            <TableRow 
+                          {teacherGroup.records && teacherGroup.records.map((record, rIndex) => (
+                            <TableRow 
                               key={rIndex} 
                               sx={{ 
                                 '&:nth-of-type(odd)': { 
@@ -751,17 +751,20 @@ function AttendanceReports() {
                                     : 'rgba(0, 0, 0, 0.04)' 
                                 } 
                               }}
-                            >                              <TableCell sx={{
+                            >
+                              <TableCell sx={{
                                 color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
                               }}>{record.studentName}</TableCell>
-                              <TableCell>                                <StatusChip
+                              <TableCell>
+                                <StatusChip
                                   label={t(record.status)}
                                   status={record.status}
                                   variant="outlined"
                                   size="small"
                                   themeMode={themeMode}
                                 />
-                              </TableCell>                              <TableCell align="center">
+                              </TableCell>
+                              <TableCell align="center">
                                 <Tooltip title={t('viewStudentDetails')}>
                                   <IconButton 
                                     onClick={() => handleViewStudent(record.studentId)}

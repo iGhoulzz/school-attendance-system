@@ -36,14 +36,32 @@ function getPasswordResetTemplate(resetUrl) {
 
 async function initializeTransporter() {
   if (!transporter) {
+    // Validate email credentials are available
+    const emailUser = process.env.EMAIL_USER || 'school.attendance.system.edu@gmail.com';
+    const emailPassword = process.env.EMAIL_PASSWORD;
+    
+    if (!emailPassword) {
+      console.error('EMAIL_PASSWORD environment variable is not set. Email functionality will not work correctly.');
+      throw new Error('Email service configuration is incomplete. Please set EMAIL_PASSWORD environment variable.');
+    }
+    
     // Create Gmail transporter
     transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER || 'school.attendance.system.edu@gmail.com',
-        pass: process.env.EMAIL_PASSWORD, // This should be set in .env file
+        user: emailUser,
+        pass: emailPassword,
       },
     });
+    
+    // Verify the connection configuration
+    try {
+      await transporter.verify();
+      console.log('Email service connected successfully');
+    } catch (error) {
+      console.error('Email service connection failed:', error.message);
+      throw new Error('Email service configuration is invalid: ' + error.message);
+    }
   }
 }
 

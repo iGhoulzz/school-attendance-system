@@ -1,9 +1,9 @@
 // StudentDetail.js
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import axios from 'axios';
 import './StudentDetail.css';
 import { useTranslation } from 'react-i18next';
 import { ThemeContext, themes } from '../utils/themeContext';
+import apiService from '../services/apiService';
 import { 
   Dialog, 
   DialogTitle, 
@@ -47,25 +47,19 @@ function StudentDetail({ studentId, student, onClose }) {
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
   const fetchStudent = useCallback(async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `http://localhost:5001/api/students/by-id/${studentId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setStudentData(response.data);
+      const data = await apiService.get(`/students/by-id/${studentId}`);
+      
+      setStudentData(data);
       setFormData({
-        name: response.data.name || '',
-        surname: response.data.surname || '',
-        parentName: response.data.parentName || '',
-        parentEmail: response.data.parentEmail || '',
-        parentPhone: response.data.parentPhone || '',
-        grade: response.data.grade || '',
+        name: data.name || '',
+        surname: data.surname || '',
+        parentName: data.parentName || '',
+        parentEmail: data.parentEmail || '',
+        parentPhone: data.parentPhone || '',
+        grade: data.grade || '',
       });
     } catch (error) {
       console.error('Error fetching student:', error);
@@ -94,19 +88,12 @@ function StudentDetail({ studentId, student, onClose }) {
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      await axios.put(
-        `http://localhost:5001/api/students/by-id/${studentData.id}`,
-        formData,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await apiService.put(`/students/by-id/${studentData.id}`, formData);
+      
       setMessage(t('studentUpdatedSuccessfully'));
       setMessageType('success');
       setStudentData({ ...studentData, ...formData });
@@ -118,16 +105,21 @@ function StudentDetail({ studentId, student, onClose }) {
       setIsLoading(false);
     }
   };
-  if (!studentData) {
-    return (      <Dialog 
+  if (!studentData) {    return (      <Dialog 
         open={true}
         fullWidth 
         maxWidth="md"
         PaperProps={{ 
           sx: { 
             borderRadius: 3, 
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-            backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.background.paper : themes.light.colors.background.paper,
+            boxShadow: themeMode?.theme === 'dark' 
+              ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)' 
+              : '0 8px 32px rgba(0, 0, 0, 0.1)',
+            backgroundColor: themeMode?.theme === 'dark' 
+              ? 'rgba(37, 42, 52, 0.95)' 
+              : '#ffffff',
+            border: themeMode?.theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+            backdropFilter: 'blur(12px)',
           } 
         }}
       >
@@ -142,9 +134,7 @@ function StudentDetail({ studentId, student, onClose }) {
         </DialogContent>
       </Dialog>
     );
-  }
-
-  return (    <Dialog 
+  }  return (    <Dialog 
       open={true} 
       onClose={onClose}
       fullWidth
@@ -152,9 +142,25 @@ function StudentDetail({ studentId, student, onClose }) {
       PaperProps={{
         sx: {
           borderRadius: 3, 
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.background.paper : themes.light.colors.background.paper,
-          color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary,
+          boxShadow: themeMode?.theme === 'dark' 
+            ? '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)' 
+            : '0 8px 32px rgba(0, 0, 0, 0.1)',
+          backgroundColor: themeMode?.theme === 'dark' 
+            ? 'rgba(37, 42, 52, 0.95)' 
+            : '#ffffff',
+          color: themeMode?.theme === 'dark' ? '#ffffff' : themes.light.colors.text.primary,
+          border: themeMode?.theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.08)' : 'none',
+          backdropFilter: 'blur(12px)',
+          overflow: 'hidden',
+          transition: 'all 0.3s ease',
+        }
+      }}
+      BackdropProps={{
+        sx: {
+          backdropFilter: 'blur(4px)',
+          backgroundColor: themeMode?.theme === 'dark' 
+            ? 'rgba(0, 0, 0, 0.7)' 
+            : 'rgba(0, 0, 0, 0.5)',
         }
       }}
     >      <DialogTitle 
@@ -166,9 +172,21 @@ function StudentDetail({ studentId, student, onClose }) {
           display: 'flex', 
           alignItems: 'center', 
           gap: 1, 
+          position: 'relative',
           background: themeMode?.theme === 'dark' 
-            ? 'linear-gradient(90deg, rgba(77, 125, 255, 0.1) 0%, rgba(77, 125, 255, 0.0) 100%)'
-            : 'linear-gradient(90deg, rgba(41, 99, 255, 0.1) 0%, rgba(41, 99, 255, 0.0) 100%)' 
+            ? 'linear-gradient(90deg, rgba(77, 125, 255, 0.15) 0%, rgba(77, 125, 255, 0.05) 100%)'
+            : 'linear-gradient(90deg, rgba(41, 99, 255, 0.1) 0%, rgba(41, 99, 255, 0.0) 100%)',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: themeMode?.theme === 'dark' 
+              ? 'linear-gradient(90deg, #4d7dff 30%, #7C4DFF 100%)' 
+              : 'linear-gradient(90deg, #2963ff 30%, #536DFE 100%)',
+          }
         }}
       >
         <PersonIcon color="primary" />
@@ -234,8 +252,7 @@ function StudentDetail({ studentId, student, onClose }) {
 
         <form onSubmit={handleUpdate}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>
-              <TextField                fullWidth
+            <Grid item xs={12} sm={6}>              <TextField                fullWidth
                 label={t('Name')}
                 name="name"
                 value={formData.name}
@@ -248,23 +265,41 @@ function StudentDetail({ studentId, student, onClose }) {
                 sx={{ 
                   mb: 2,
                   '& .MuiOutlinedInput-root': {
+                    borderRadius: 8,
+                    backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.07)' : undefined,
+                    transition: 'background-color 0.2s ease, box-shadow 0.2s ease',
+                    '&.Mui-focused': {
+                      backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.09)' : undefined,
+                      boxShadow: themeMode?.theme === 'dark' ? '0 0 0 1px rgba(77, 125, 255, 0.7)' : 'none',
+                    },
                     '& fieldset': {
-                      borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.23)',
+                      borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.23)',
+                      transition: 'border-color 0.2s ease',
                     },
                     '&:hover fieldset': {
-                      borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.87)',
+                      borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.87)',
                     },
                     '&.Mui-focused fieldset': {
                       borderColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
+                      borderWidth: 2
+                    },
+                    '&:hover': {
+                      backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.09)' : 'rgba(0, 0, 0, 0.01)',
                     },
                     '& .MuiInputBase-input': {
-                      color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary,
+                      color: themeMode?.theme === 'dark' ? '#ffffff' : themes.light.colors.text.primary,
+                      '&::placeholder': {
+                        color: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : undefined,
+                        opacity: 1,
+                      },
                     },
                   },
                   '& .MuiInputLabel-root': {
-                    color: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+                    color: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.6)',
+                    transition: 'color 0.2s ease, transform 0.2s ease',
                     '&.Mui-focused': {
                       color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : themes.light.colors.primary,
+                      fontWeight: 600,
                     },
                   },
                 }}
@@ -454,18 +489,28 @@ function StudentDetail({ studentId, student, onClose }) {
             </Grid>
           </Grid>
         </form>
-      </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>        <Button 
+      </DialogContent>        <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>        <Button 
           variant="outlined" 
           onClick={onClose} 
           disabled={isLoading} 
           startIcon={<CancelIcon />}
           sx={{
-            borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : undefined,
-            color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : undefined,
+            borderRadius: 2,
+            borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(25, 118, 210, 0.5)',
+            color: themeMode?.theme === 'dark' ? '#ffffff' : 'primary.main',
+            px: 2.5,
+            py: 0.8,
+            textTransform: 'none',
+            fontWeight: 500,
+            transition: 'all 0.2s ease',
             '&:hover': {
-              borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : undefined,
-              backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : undefined,
+              borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : 'primary.main',
+              backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(25, 118, 210, 0.04)',
+              transform: 'translateY(-1px)',
+              boxShadow: themeMode?.theme === 'dark' ? '0 3px 8px rgba(0, 0, 0, 0.3)' : '0 3px 8px rgba(0, 0, 0, 0.1)',
+            },
+            '&:active': {
+              transform: 'translateY(0)',
             }
           }}
         >
@@ -478,15 +523,45 @@ function StudentDetail({ studentId, student, onClose }) {
           disabled={isLoading} 
           startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
           sx={{ 
+            borderRadius: 2,
+            px: 3,
+            py: 0.8,
+            textTransform: 'none',
+            fontWeight: 500,
             background: themeMode?.theme === 'dark'
               ? 'linear-gradient(90deg, #4d7dff 0%, #3a67e0 100%)'
               : 'linear-gradient(90deg, #2963ff 0%, #2963ff 100%)',
-            boxShadow: '0 4px 12px rgba(41, 99, 255, 0.2)',
+            boxShadow: themeMode?.theme === 'dark' 
+              ? '0 4px 12px rgba(41, 99, 255, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)' 
+              : '0 4px 12px rgba(41, 99, 255, 0.2)',
+            transition: 'all 0.2s ease',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::after': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '100%',
+              background: 'linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0))',
+              opacity: 0,
+              transition: 'opacity 0.2s ease',
+            },
             '&:hover': {
               background: themeMode?.theme === 'dark'
                 ? 'linear-gradient(90deg, #3a67e0 0%, #2854c8 100%)'
                 : 'linear-gradient(90deg, #1e50e0 0%, #1e50e0 100%)',
-              boxShadow: '0 6px 16px rgba(41, 99, 255, 0.3)',
+              boxShadow: themeMode?.theme === 'dark'
+                ? '0 6px 16px rgba(41, 99, 255, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08)' 
+                : '0 6px 16px rgba(41, 99, 255, 0.3)',
+              transform: 'translateY(-2px)',
+              '&::after': {
+                opacity: 1,
+              }
+            },
+            '&:active': {
+              transform: 'translateY(0)',
             }
           }}
         >
