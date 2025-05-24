@@ -58,7 +58,9 @@ import {
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 
-const FormPaper = styled(Paper)(({ theme, themeMode }) => ({
+const FormPaper = styled(Paper, {
+  shouldForwardProp: prop => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   borderRadius: 16,
   padding: theme.spacing(3),
   background: themeMode?.theme === 'dark' 
@@ -87,7 +89,9 @@ const FormPaper = styled(Paper)(({ theme, themeMode }) => ({
   },
 }));
 
-const ListPaper = styled(Paper)(({ theme, themeMode }) => ({
+const ListPaper = styled(Paper, {
+  shouldForwardProp: prop => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   borderRadius: 16,
   overflow: 'hidden',
   background: themeMode?.theme === 'dark' 
@@ -125,7 +129,9 @@ const ListPaper = styled(Paper)(({ theme, themeMode }) => ({
   },
 }));
 
-const SearchPaper = styled(Paper)(({ theme, themeMode }) => ({
+const SearchPaper = styled(Paper, {
+  shouldForwardProp: prop => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   display: 'flex',
   alignItems: 'center',
   padding: theme.spacing(0.75, 2.5),
@@ -175,7 +181,9 @@ const SearchPaper = styled(Paper)(({ theme, themeMode }) => ({
   },
 }));
 
-const StyledTextField = styled(TextField)(({ theme, themeMode }) => ({
+const StyledTextField = styled(TextField, {
+  shouldForwardProp: prop => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   '& .MuiOutlinedInput-root': {
     borderRadius: 8,
     backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.07)' : undefined,
@@ -359,14 +367,13 @@ function StudentManagement() {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [formVisible, setFormVisible] = useState(false);
-
   const { data: apiData, refetch: refetchStudents } = useApiData('http://localhost:5001/api/students', {}, { 
     enabled: false,
     refetchOnWindowFocus: false,
   });
 
-  const { mutate: createStudent, isLoading: isCreating } = useApiPost('http://localhost:5001/api/students');
-  const { mutate: deleteStudent, isLoading: isDeleting } = useApiDelete('http://localhost:5001/api/students/by-id');
+  const { postData: createStudent, posting: isCreating } = useApiPost();
+  const { deleteData: deleteStudent, deleting: isDeleting } = useApiDelete();
   useEffect(() => {
     if (apiData) {
       setStudents(apiData);
@@ -429,11 +436,10 @@ function StudentManagement() {
         setErrorFields(missingFields);
         setMessage(t('pleaseCompleteAllFields'));
         setMessageType('error');
-        return;
-      }
+        return;      }
       
       setLoading(true);
-      await createStudent(newStudent);
+      await createStudent('http://localhost:5001/api/students', newStudent);
       setMessage(t('studentCreatedSuccessfully'));
       setMessageType('success');
       setErrorFields([]);
@@ -457,7 +463,6 @@ function StudentManagement() {
     setStudentToDelete(student);
     setConfirmDialogOpen(true);
   };
-
   const handleConfirmDelete = async () => {
     if (!studentToDelete) return;
     
@@ -465,7 +470,7 @@ function StudentManagement() {
       setLoading(true);
       setConfirmDialogOpen(false);
       
-      await deleteStudent(studentToDelete.id);
+      await deleteStudent(`http://localhost:5001/api/students/by-id/${studentToDelete.id}`);
       setMessage(t('studentDeletedSuccessfully'));
       setMessageType('success');
       refetchStudents();
@@ -526,7 +531,7 @@ function StudentManagement() {
           </Alert>
         </Fade>      )}
 
-      <SearchPaper elevation={0} themeContext={themeMode}>
+      <SearchPaper elevation={0} themeMode={themeMode}>
         <SearchIcon color="action" sx={{ mr: 1 }} />
         <InputBase
           fullWidth
@@ -548,7 +553,7 @@ function StudentManagement() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}        >
-          <FormPaper elevation={0} themeContext={themeMode}>
+          <FormPaper elevation={0} themeMode={themeMode}>
             <Typography 
               variant="h6" 
               fontWeight="bold" 
@@ -565,11 +570,10 @@ function StudentManagement() {
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
                   error={errorFields.includes('name')}
-                  helperText={errorFields.includes('name') ? t('fieldRequired') : ''}
-                  InputProps={{
+                  helperText={errorFields.includes('name') ? t('fieldRequired') : ''}                  InputProps={{
                     startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment>,
                   }}
-                  themeContext={themeMode}
+                  themeMode={themeMode}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={4}>                <StyledTextField
@@ -578,48 +582,57 @@ function StudentManagement() {
                   value={newStudent.surname}
                   onChange={(e) => setNewStudent({ ...newStudent, surname: e.target.value })}
                   error={errorFields.includes('surname')}
-                  helperText={errorFields.includes('surname') ? t('fieldRequired') : ''}
-                  InputProps={{
+                  helperText={errorFields.includes('surname') ? t('fieldRequired') : ''}                  InputProps={{
                     startAdornment: <InputAdornment position="start"><BadgeIcon /></InputAdornment>,
                   }}
-                  themeContext={themeMode}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>                <StyledTextField
-                  fullWidth
-                  label={t('Email')}
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                  error={errorFields.includes('email')}
-                  helperText={errorFields.includes('email') ? t('fieldRequired') : ''}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><EmailIcon /></InputAdornment>,
-                  }}
-                  themeContext={themeMode}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>                <StyledTextField
-                  fullWidth
-                  label={t('Phone')}
-                  value={newStudent.phone}
-                  onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><PhoneIcon /></InputAdornment>,
-                  }}
-                  themeContext={themeMode}
+                  themeMode={themeMode}
                 />
               </Grid>              <Grid item xs={12} sm={6} md={4}>                <StyledTextField
+                  fullWidth
+                  label={t('ParentName')}
+                  value={newStudent.parentName}
+                  onChange={(e) => setNewStudent({ ...newStudent, parentName: e.target.value })}
+                  error={errorFields.includes('parentName')}
+                  helperText={errorFields.includes('parentName') ? t('fieldRequired') : ''}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><PersonIcon /></InputAdornment>,
+                  }}
+                  themeMode={themeMode}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={4}>                <StyledTextField
+                  fullWidth
+                  label={t('ParentEmail')}
+                  value={newStudent.parentEmail}
+                  onChange={(e) => setNewStudent({ ...newStudent, parentEmail: e.target.value })}
+                  error={errorFields.includes('parentEmail')}
+                  helperText={errorFields.includes('parentEmail') ? t('fieldRequired') : ''}                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><EmailIcon /></InputAdornment>,
+                  }}
+                  themeMode={themeMode}
+                />
+              </Grid>              <Grid item xs={12} sm={6} md={4}>                <StyledTextField
+                  fullWidth
+                  label={t('ParentPhone')}
+                  value={newStudent.parentPhone}
+                  onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
+                  error={errorFields.includes('parentPhone')}
+                  helperText={errorFields.includes('parentPhone') ? t('fieldRequired') : ''}                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><PhoneIcon /></InputAdornment>,
+                  }}
+                  themeMode={themeMode}
+                />
+              </Grid><Grid item xs={12} sm={6} md={4}>                <StyledTextField
                   fullWidth
                   select
                   label={t('Grade')}
                   value={newStudent.grade}
                   onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
                   error={errorFields.includes('grade')}
-                  helperText={errorFields.includes('grade') ? t('fieldRequired') : ''}
-                  InputProps={{
+                  helperText={errorFields.includes('grade') ? t('fieldRequired') : ''}                  InputProps={{
                     startAdornment: <InputAdornment position="start"><GradeIcon /></InputAdornment>,
                   }}
-                  themeContext={themeMode}
+                  themeMode={themeMode}
                 >
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].map((grade) => (
                     <MenuItem key={grade} value={grade}>
@@ -634,11 +647,10 @@ function StudentManagement() {
                   label={t('DateOfBirth')}
                   value={newStudent.dateOfBirth}
                   onChange={(e) => setNewStudent({ ...newStudent, dateOfBirth: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  InputProps={{
+                  InputLabelProps={{ shrink: true }}                  InputProps={{
                     startAdornment: <InputAdornment position="start"><CalendarTodayIcon /></InputAdornment>,
                   }}
-                  themeContext={themeMode}
+                  themeMode={themeMode}
                 />
               </Grid>
             </Grid>
@@ -752,7 +764,7 @@ function StudentManagement() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}              >                <ListPaper elevation={0} themeContext={themeMode}>                <Box sx={{ 
+                transition={{ duration: 0.5 }}              >                <ListPaper elevation={0} themeMode={themeMode}>                <Box sx={{ 
                     px: 3, 
                     py: 2, 
                     bgcolor: themeMode?.theme === 'dark' 

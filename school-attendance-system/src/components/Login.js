@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { AuthContext } from '../contexts/AuthContext';
 import { TextField, Button, InputAdornment, IconButton, Snackbar, Alert, Typography, Link, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
+import { Email, Lock, Visibility, VisibilityOff, Home } from '@mui/icons-material';
 import SchoolIcon from '@mui/icons-material/School';
 import { useNavigate } from 'react-router-dom';
 import { ThemeContext, themes } from '../utils/themeContext';
@@ -23,6 +23,7 @@ const LoginContainer = styled('div', {
     : 'linear-gradient(135deg, #2963ff 0%, #27cfad 100%)',
   backgroundSize: '400% 400%',
   animation: 'gradient 15s ease infinite',
+  position: 'relative',
 
   '@keyframes gradient': {
     '0%': { backgroundPosition: '0% 50%' },
@@ -68,6 +69,35 @@ const LogoText = styled(Typography, {
   fontSize: '24px',
   fontWeight: 'bold',
   marginLeft: '16px',
+}));
+
+const HomeButton = styled(Button, {
+  shouldForwardProp: prop => prop !== 'themeContext'
+})(({ theme, themeContext }) => ({
+  position: 'absolute',
+  top: '20px',
+  left: '20px',
+  borderRadius: '50%',
+  minWidth: 'unset',
+  width: '48px',
+  height: '48px',
+  background: themeContext?.theme === 'dark'
+    ? 'rgba(16, 20, 24, 0.75)'
+    : 'rgba(255, 255, 255, 0.25)',
+  backdropFilter: 'blur(10px)',
+  color: 'white',
+  border: themeContext?.theme === 'dark'
+    ? '1px solid rgba(255, 255, 255, 0.08)'
+    : '1px solid rgba(255, 255, 255, 0.3)',
+  boxShadow: themeContext?.theme === 'dark'
+    ? '0 4px 12px rgba(0, 0, 0, 0.3)'
+    : '0 4px 12px rgba(0, 0, 0, 0.1)',
+
+  '&:hover': {
+    background: themeContext?.theme === 'dark'
+      ? 'rgba(26, 30, 34, 0.85)'
+      : 'rgba(255, 255, 255, 0.35)',
+  }
 }));
 
 const StyledTextField = styled(TextField, {
@@ -172,9 +202,7 @@ function Login() {
       }, 15000); // 15 second timeout
     }
     return () => timeoutId && clearTimeout(timeoutId);
-  }, [loading]);
-
-  const handleLogin = async (e) => {
+  }, [loading]);  const handleLogin = async (e) => {
     e.preventDefault();
     
     if (!email.trim() || !password.trim()) {
@@ -184,20 +212,29 @@ function Login() {
     
     try {
       setLoading(true);
+      console.log('Attempting login with email:', email);
       const success = await login(email, password);
+      console.log('Login result:', success);
       
       if (success) {
+        console.log('Login successful, showing success message');
+        // Keep the message visible for a moment before redirect
         setSnackbarOpen(true);
         setSnackbarMessage(t('loginSuccess'));
         setSnackbarSeverity('success');
         
-        // Use React Router navigation after successful login
+        console.log('Will redirect to dashboard in 1 second...');
+        // Small delay to allow state to update and show success message
         setTimeout(() => {
-          navigate('/dashboard');
+          console.log('Now redirecting to dashboard...');
+          navigate('/dashboard', { replace: true });
         }, 1000);
+      } else {
+        console.log('Login returned false, not redirecting');
+        setError('Login failed. Please try again.');
       }
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Login failed with error:', error);
       
       // Handle different types of errors
       if (error.message === 'Network Error') {
@@ -219,6 +256,15 @@ function Login() {
 
   return (
     <LoginContainer themeContext={themeContext}>
+      <HomeButton 
+        themeContext={themeContext}
+        aria-label="Go to home page"
+        onClick={() => navigate('/')}
+        title={t('backToHome')}
+      >
+        <Home />
+      </HomeButton>
+      
       <GlassCard
         themeContext={themeContext}
         initial={{ opacity: 0, scale: 0.9 }}

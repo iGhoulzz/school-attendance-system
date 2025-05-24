@@ -1,6 +1,7 @@
 // src/hooks/useApiData.js
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../services/apiService';
+import logger from '../utils/logger';
 
 /**
  * Custom hook for fetching data from the API with caching
@@ -29,10 +30,9 @@ export const useApiData = (
         cacheExpiryMinutes,
         forceRefresh
       });
-      setData(result);
-    } catch (err) {
+      setData(result);    } catch (err) {
       setError(err);
-      console.error(`Error fetching data from ${endpoint}:`, err);
+      logger.error(`Error fetching data from ${endpoint}:`, err);
     } finally {
       setLoading(false);
     }
@@ -91,12 +91,18 @@ export const useApiDelete = () => {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState(null);
 
-  const deleteData = useCallback(async (endpoint, invalidateCache = true) => {
+  const deleteData = useCallback(async (endpoint, options = {}) => {
     setDeleting(true);
     setError(null);
 
     try {
-      const result = await apiService.delete(endpoint, invalidateCache);
+      // Always refresh CSRF token for DELETE operations
+      const deleteOptions = {
+        ...options,
+        refreshCsrf: true
+      };
+      
+      const result = await apiService.delete(endpoint, deleteOptions);
       setDeleting(false);
       return result;
     } catch (err) {

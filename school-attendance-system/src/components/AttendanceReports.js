@@ -16,6 +16,7 @@ import { useApiData, useApiPost, useApiDelete } from '../hooks/useApiData';
 import { createDebouncedClickHandler } from '../utils/debounceUtils';
 import DOMPurify from 'dompurify';
 import apiService from '../services/apiService';
+import logger from '../utils/logger';
 import { 
   Box, 
   Typography, 
@@ -167,8 +168,7 @@ function AttendanceReports() {
   const [loading, setLoading] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
-  const [confirmMessage, setConfirmMessage] = useState('');
-  const fetchAttendanceData = useCallback(async (selectedDate) => {
+  const [confirmMessage, setConfirmMessage] = useState('');  const fetchAttendanceData = useCallback(async (selectedDate) => {
     try {
       setLoading(true);
       
@@ -176,15 +176,27 @@ function AttendanceReports() {
       // Use a more robust date formatting to avoid timezone issues
       const formattedDate = selectedDate instanceof Date 
         ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
-        : selectedDate.toISOString().split('T')[0];
+        : selectedDate.toISOString().split('T')[0];      logger.debug('Fetching attendance for date:', formattedDate);
+        // Check if there's been a recent attendance submission
+      const lastSubmission = localStorage.getItem('lastAttendanceSubmission');
+      const forceRefresh = localStorage.getItem('forceAttendanceRefresh');
+      const shouldForceRefresh = (lastSubmission && 
+        (Date.now() - parseInt(lastSubmission) < 300000)) || // Within 5 minutes
+        forceRefresh === 'true'; 
+        
+      if (shouldForceRefresh) {
+        logger.debug('Forcing attendance reports refresh due to recent submission or manual refresh');
+      }
 
-      console.log('Fetching attendance for date:', formattedDate);
-      
-      // Use apiService instead of direct axios call with localStorage token
-      const response = await apiService.get(`/attendance?date=${formattedDate}`);
+      // Add cache-busting parameter if needed
+      const endpoint = shouldForceRefresh 
+        ? `/attendance?date=${formattedDate}&refresh=${Date.now()}` 
+        : `/attendance?date=${formattedDate}`;
+        // Use apiService instead of direct axios call with localStorage token
+      const response = await apiService.get(endpoint);
       const fetchedData = response; 
       
-      console.log('Fetched attendance data:', fetchedData);
+      logger.debug('Fetched attendance data:', fetchedData);
 
       if (Array.isArray(fetchedData) && fetchedData.length > 0) {
         const allRecords = [];
@@ -197,19 +209,29 @@ function AttendanceReports() {
         });
 
         setAttendanceEntries(fetchedData);
-        setAttendanceData(allRecords);
-        setTotalStudents(allRecords.length);
+        setAttendanceData(allRecords);        setTotalStudents(allRecords.length);
         setAbsentStudentsCount(allRecords.filter((r) => r.status === 'Absent').length);
         setMessage('');
+        
+        // Clear the lastAttendanceSubmission flag if we did a force refresh
+        const lastSubmission = localStorage.getItem('lastAttendanceSubmission');
+        if (lastSubmission) {
+          // Check if this is today's data and clear the flag
+          const today = new Date();
+          const formattedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+            if (formattedDate === formattedToday) {
+            logger.debug('Clearing attendance submission flag after successful refresh');
+            localStorage.removeItem('lastAttendanceSubmission');
+          }
+        }
       } else {
         setAttendanceEntries([]);
         setAttendanceData([]);
         setTotalStudents(0);
-        setAbsentStudentsCount(0);
-        setMessage(t('noAttendanceRecordsFoundForDate'));
+        setAbsentStudentsCount(0);        setMessage(t('noAttendanceRecordsFoundForDate'));
       }
     } catch (error) {
-      console.error('Error fetching attendance records:', error);
+      logger.error('Error fetching attendance records:', error);
       setMessage(t('errorFetchingAttendanceRecords'));
     } finally {
       setLoading(false);
@@ -232,10 +254,28 @@ function AttendanceReports() {
     // Don't use debounce for explicit user date selection
     fetchAttendanceData(newDate);
   };
-
   useEffect(() => {
+    // Check if we need to force a refresh on initial load
+    const checkIfShouldForceRefresh = () => {
+      const today = new Date();
+      const selectedDate = date;
+      
+      // Format both dates to YYYY-MM-DD for comparison
+      const formattedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const formattedSelectedDate = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+      
+      // Check if viewing today's data and there's a recent submission
+      const lastSubmission = localStorage.getItem('lastAttendanceSubmission');
+      const viewingToday = formattedToday === formattedSelectedDate;
+        if (viewingToday && lastSubmission) {
+        logger.debug('Viewing today\'s attendance data with recent submission, will force refresh');
+        // The refresh will happen in fetchAttendanceData due to the lastAttendanceSubmission flag
+      }
+    };
+    
+    checkIfShouldForceRefresh();
     fetchAttendanceData(date);
-  }, [date, fetchAttendanceData]);  const handleViewStudent = async (studentId) => {
+  }, [date, fetchAttendanceData]);const handleViewStudent = async (studentId) => {
     setLoading(true);
     if (studentCache[studentId]) {
       setSelectedStudent(studentCache[studentId]);
@@ -248,11 +288,10 @@ function AttendanceReports() {
         // Sanitize data with DOMPurify
         const sanitizedData = DOMPurify.sanitize(JSON.stringify(data));
         const sanitizedStudentData = JSON.parse(sanitizedData);
-        
-        setSelectedStudent(sanitizedStudentData);
+          setSelectedStudent(sanitizedStudentData);
         setStudentCache((prev) => ({ ...prev, [studentId]: sanitizedStudentData }));
       } catch (error) {
-        console.error('Error fetching student details:', error);
+        logger.error('Error fetching student details:', error);
         setMessage(t('errorFetchingStudentDetails'));
       } finally {
         setLoading(false);
@@ -284,23 +323,29 @@ function AttendanceReports() {
     } else if (confirmAction === 'alerts') {
       await handleSendAlerts();
     }
-  };
-  const handleClearAttendance = async () => {
+  };  const handleClearAttendance = async () => {
     try {
       setLoading(true);
       const formattedDate = date.toISOString().split('T')[0];
       
-      // Use apiService instead of direct token access and axios
-      await apiService.delete(`/attendance?date=${formattedDate}`);
+      // Use apiService with CSRF token refresh for deletion
+      await apiService.delete(`/attendance?date=${formattedDate}`, {
+        refreshCsrf: true // Ensure we get a fresh CSRF token
+      });
       
       setMessage(t('attendanceRecordsDeletedSuccessfully'));
       setAttendanceEntries([]);
       setAttendanceData([]);
-      setTotalStudents(0);
-      setAbsentStudentsCount(0);
+      setTotalStudents(0);      setAbsentStudentsCount(0);
     } catch (error) {
-      console.error('Error deleting attendance records:', error);
-      setMessage(t('errorDeletingAttendanceRecords'));
+      logger.error('Error deleting attendance records:', error);
+      
+      // Enhanced error message based on error type
+      if (error.response?.status === 403) {
+        setMessage(t('csrfTokenError'));
+      } else {
+        setMessage(t('errorDeletingAttendanceRecords'));
+      }
     } finally {
       setLoading(false);
     }
@@ -311,10 +356,9 @@ function AttendanceReports() {
       
       // Use apiService instead of direct axios call with hardcoded URL
       await apiService.post('/attendance/send-alerts', { date: formattedDate });
-      
-      setMessage(t('alertEmailsSentSuccessfully'));
+        setMessage(t('alertEmailsSentSuccessfully'));
     } catch (error) {
-      console.error('Error sending alert emails:', error);
+      logger.error('Error sending alert emails:', error);
       setMessage(t('errorSendingAlertEmails'));
     } finally {
       setLoading(false);
@@ -592,7 +636,15 @@ function AttendanceReports() {
               <span>
                 <IconButton 
                   color="primary"
-                  onClick={() => fetchAttendanceData(date)}
+                  onClick={() => {
+                    // Set force refresh flag temporarily when manually refreshing
+                    localStorage.setItem('forceAttendanceRefresh', 'true');
+                    fetchAttendanceData(date);
+                    // Remove the flag after a short delay
+                    setTimeout(() => {
+                      localStorage.removeItem('forceAttendanceRefresh');
+                    }, 2000);
+                  }}
                   disabled={loading}
                   size="small"
                 sx={{

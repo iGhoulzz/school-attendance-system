@@ -21,6 +21,7 @@ import Settings from './components/Settings';
 import AdminManagement from './components/AdminManagement';
 import ResetPassword from './components/ResetPassword';
 import { AuthProvider } from './contexts/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
 
 // Loading spinner component
 const LoadingSpinner = () => (
@@ -36,35 +37,6 @@ const LoadingSpinner = () => (
     <CircularProgress />
   </Box>
 );
-
-// Protected route wrapper
-const ProtectedRoute = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    const checkAuth = () => {
-      try {
-        const token = localStorage.getItem('token');
-        setIsAuthenticated(!!token);
-      } catch (error) {
-        console.warn('Could not access localStorage for authentication', error);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
-  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location }} replace />;
-};
 
 // Main routes component
 const AppRoutes = () => {
@@ -87,39 +59,39 @@ const AppRoutes = () => {
                     
                     {/* Protected routes */}
                     <Route path="/dashboard" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <Dashboard />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     <Route path="/students" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <StudentManagement />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     <Route path="/teachers" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <TeacherManagement />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     <Route path="/record-attendance" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <RecordAttendance />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     <Route path="/reports" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <AttendanceReports />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     <Route path="/settings" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <Settings />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     <Route path="/admin" element={
-                      <ProtectedRoute>
+                      <PrivateRoute>
                         <AdminManagement />
-                      </ProtectedRoute>
+                      </PrivateRoute>
                     } />
                     
                     {/* Fallback route */}

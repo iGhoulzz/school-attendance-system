@@ -45,88 +45,87 @@ import {
 import { styled } from '@mui/material/styles';
 
 const StyledMotionDiv = styled(motion.div, {
-  shouldForwardProp: (prop) => prop !== 'themeContext'
+  shouldForwardProp: (prop) => prop !== 'themeMode'
 })(() => ({
   // No specific styling needed, just filtering the prop
 }));
 
 const FormPaper = styled(Paper, {
-  shouldForwardProp: (prop) => prop !== 'themeContext'
-})(({ theme, themeContext }) => ({
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   borderRadius: 16,
   padding: theme.spacing(3),
-  background: themeContext?.theme === 'dark' 
+  background: themeMode?.theme === 'dark' 
     ? 'rgba(37, 42, 52, 0.8)' 
     : 'rgba(255, 255, 255, 0.8)',
   backdropFilter: 'blur(10px)',
-  boxShadow: themeContext?.theme === 'dark'
+  boxShadow: themeMode?.theme === 'dark'
     ? '0 8px 32px rgba(0, 0, 0, 0.2)'
     : '0 8px 32px rgba(0, 0, 0, 0.05)',
   marginBottom: theme.spacing(4)
 }));
 
 const ListPaper = styled(Paper, {
-  shouldForwardProp: (prop) => prop !== 'themeContext'
-})(({ theme, themeContext }) => ({
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   borderRadius: 16,
   overflow: 'hidden',
-  background: themeContext?.theme === 'dark' 
+  background: themeMode?.theme === 'dark' 
     ? 'rgba(37, 42, 52, 0.8)' 
     : 'rgba(255, 255, 255, 0.8)',
   backdropFilter: 'blur(10px)',
-  boxShadow: themeContext?.theme === 'dark'
+  boxShadow: themeMode?.theme === 'dark'
     ? '0 8px 32px rgba(0, 0, 0, 0.2)'
     : '0 8px 32px rgba(0, 0, 0, 0.05)'
 }));
 
 const StyledTextField = styled(TextField, {
-  shouldForwardProp: (prop) => prop !== 'themeContext'
-})(({ theme, themeContext }) => ({
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})(({ theme, themeMode }) => ({
   marginBottom: theme.spacing(2),
   '& .MuiOutlinedInput-root': {
     borderRadius: 8,
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderColor: themeContext?.theme === 'dark' ? themes.dark.colors.primary : theme.palette.primary.main,
+      borderColor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : theme.palette.primary.main,
       borderWidth: 2
     },
     '& fieldset': {
-      borderColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.23)',
+      borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.23)',
     },
     '&:hover fieldset': {
-      borderColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.87)',
+      borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.87)',
     },
     '& .MuiInputBase-input': {
-      color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary,
+      color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary,
     },
-  },
-  '& .MuiInputLabel-root': {
-    color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+  },  '& .MuiInputLabel-root': {
+    color: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
     '&.Mui-focused': {
-      color: themeContext?.theme === 'dark' ? themes.dark.colors.primary : theme.palette.primary.main,
+      color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : theme.palette.primary.main,
     },
   }
 }));
 
 const ActionButton = styled(Button, {
-  shouldForwardProp: (prop) => !['themeContext', 'variant'].includes(prop)
-})(({ theme, themeContext, variant }) => ({
+  shouldForwardProp: (prop) => !['themeMode', 'variant'].includes(prop)
+})(({ theme, themeMode, variant }) => ({
   borderRadius: 8,
   padding: theme.spacing(1, 3),
   textTransform: 'none',
   fontWeight: 600,
   boxShadow: 'none',
-  color: themeContext?.theme === 'dark' && variant === 'outlined'
+  color: themeMode?.theme === 'dark' && variant === 'outlined'
     ? themes.dark.colors.text.primary 
     : undefined,
-  borderColor: themeContext?.theme === 'dark' && variant === 'outlined'
+  borderColor: themeMode?.theme === 'dark' && variant === 'outlined'
     ? 'rgba(255, 255, 255, 0.3)' 
     : undefined,
   '&:hover': {
-    boxShadow: themeContext?.theme === 'dark' ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
-    borderColor: themeContext?.theme === 'dark' && variant === 'outlined'
+    boxShadow: themeMode?.theme === 'dark' ? '0 4px 12px rgba(0, 0, 0, 0.3)' : '0 4px 12px rgba(0, 0, 0, 0.1)',
+    borderColor: themeMode?.theme === 'dark' && variant === 'outlined'
       ? 'rgba(255, 255, 255, 0.5)' 
       : undefined,
-    backgroundColor: themeContext?.theme === 'dark' && variant === 'outlined'
+    backgroundColor: themeMode?.theme === 'dark' && variant === 'outlined'
       ? 'rgba(255, 255, 255, 0.05)' 
       : undefined,
   },
@@ -143,7 +142,7 @@ const TeachersList = React.memo(
   ({ 
     teachers = [], 
     onDeleteClick, 
-    themeContext 
+    themeMode 
   }) => {
     const { t } = useTranslation();
     
@@ -151,35 +150,34 @@ const TeachersList = React.memo(
       return (
         <Box p={4} textAlign="center">
           <Typography sx={{
-            color: themeContext?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
+            color: themeMode?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
           }}>
             {t('noTeachersFound')}
           </Typography>
         </Box>
       );
     }
-    
-    return (
+      return (
       <List sx={{ p: 0 }}>
         {teachers.map((teacher, index) => (
           <React.Fragment key={teacher._id}>
             <ListItem sx={{ py: 2, px: 3 }}>
               <ListItemAvatar>
-                <Avatar sx={{ bgcolor: themeContext?.theme === 'dark' ? themes.dark.colors.primary : 'primary.main' }}>
+                <Avatar sx={{ bgcolor: themeMode?.theme === 'dark' ? themes.dark.colors.primary : 'primary.main' }}>
                   <PersonIcon />
                 </Avatar>
               </ListItemAvatar>
               <ListItemText
                 primary={
                   <Typography variant="body1" fontWeight="medium" sx={{
-                    color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
+                    color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
                   }}>
                     {teacher.name} {teacher.surname}
                   </Typography>
                 }
                 secondary={
                   <Typography variant="body2" sx={{
-                    color: themeContext?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
+                    color: themeMode?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
                   }}>
                     {teacher.email}
                   </Typography>
@@ -192,7 +190,7 @@ const TeachersList = React.memo(
                       edge="end" 
                       onClick={() => onDeleteClick(teacher)}
                       sx={{
-                        color: themeContext?.theme === 'dark' ? '#f44336' : 'error.main'
+                        color: themeMode?.theme === 'dark' ? '#f44336' : 'error.main'
                       }}
                     >
                       <DeleteIcon />
@@ -204,20 +202,19 @@ const TeachersList = React.memo(
             {index < teachers.length - 1 && <Divider 
               component="li" 
               sx={{
-                borderColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : undefined
+                borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : undefined
               }}
             />}
           </React.Fragment>
         ))}
       </List>
     );
-  },
-  // Custom comparison function for memoization
+  },  // Custom comparison function for memoization
   (prevProps, nextProps) => {
     const prevTeachers = Array.isArray(prevProps.teachers) ? prevProps.teachers : [];
     const nextTeachers = Array.isArray(nextProps.teachers) ? nextProps.teachers : [];
     return teachersToString(prevTeachers) === teachersToString(nextTeachers) &&
-           prevProps.themeContext?.theme === nextProps.themeContext?.theme;
+           prevProps.themeMode?.theme === nextProps.themeMode?.theme;
   }
 );
 
@@ -241,7 +238,7 @@ const useFilteredTeachers = (teachers, searchQuery) => {
 
 function TeacherManagement() {
   const { t } = useTranslation();
-  const themeContext = useContext(ThemeContext);
+  const themeMode = useContext(ThemeContext);
   const [newTeacher, setNewTeacher] = useState({
     name: '',
     surname: '',
@@ -383,35 +380,33 @@ function TeacherManagement() {
     },
     [handleSearchChange]
   );
-
   return (    <Box sx={{ p: 3, maxWidth: '100%' }}>      <StyledMotionDiv
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        themeContext={themeContext}
+        themeMode={themeMode}
       >
         <Typography variant="h4" fontWeight="bold" gutterBottom sx={{
-          color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary
+          color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary
         }}>
           {t('TeacherManagement')}
         </Typography>
       </StyledMotionDiv>
 
       {message && (
-        <Fade in={!!message}>
-          <Alert 
+        <Fade in={!!message}>          <Alert 
             severity={messageType}
             sx={{ 
               mb: 3, 
               borderRadius: 2,
-              backgroundColor: themeContext?.theme === 'dark' 
+              backgroundColor: themeMode?.theme === 'dark' 
                 ? (messageType === 'success' ? 'rgba(46, 125, 50, 0.1)' : 'rgba(211, 47, 47, 0.1)')
                 : undefined,
-              color: themeContext?.theme === 'dark' 
+              color: themeMode?.theme === 'dark' 
                 ? themes.dark.colors.text.primary 
                 : undefined,
               '& .MuiAlert-icon': {
-                color: themeContext?.theme === 'dark'
+                color: themeMode?.theme === 'dark'
                   ? (messageType === 'success' ? '#66bb6a' : '#f44336')
                   : undefined
               }
@@ -425,17 +420,16 @@ function TeacherManagement() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.1 }}
-        themeContext={themeContext}><FormPaper elevation={0} themeContext={themeContext}>
+        themeMode={themeMode}><FormPaper elevation={0} themeMode={themeMode}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Typography 
                 variant="h6" 
                 fontWeight="bold" 
-                gutterBottom
-                sx={{ 
+                gutterBottom                sx={{ 
                   display: 'flex', 
                   alignItems: 'center',
-                  color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary
+                  color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary
                 }}
               >
                 <PersonAddIcon sx={{ mr: 1 }} /> {t('AddNewTeacher')}
@@ -444,7 +438,7 @@ function TeacherManagement() {
                 variant="body2" 
                 paragraph
                 sx={{
-                  color: themeContext?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
+                  color: themeMode?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
                 }}
               >
                 {t('fillTheFormToAddNewTeacher')}
@@ -459,7 +453,7 @@ function TeacherManagement() {
                   onChange={(e) => setNewTeacher({ ...newTeacher, name: e.target.value })}                  required
                   variant="outlined"
                   placeholder={t('enterFirstName')}
-                  themeContext={themeContext}
+                  themeMode={themeMode}
                 />
                 <StyledTextField
                   fullWidth
@@ -468,8 +462,8 @@ function TeacherManagement() {
                   onChange={(e) => setNewTeacher({ ...newTeacher, surname: e.target.value })}                  required
                   variant="outlined"
                   placeholder={t('enterSurname')}
-                  themeContext={themeContext}
-                />                <StyledTextField
+                  themeMode={themeMode}
+                /><StyledTextField
                   fullWidth
                   label={t('Email')}
                   value={newTeacher.email}
@@ -477,12 +471,12 @@ function TeacherManagement() {
                   variant="outlined"
                   type="email"
                   placeholder={t('enterEmail')}
-                  themeContext={themeContext}
+                  themeMode={themeMode}
                   InputProps={{
                     startAdornment: <EmailIcon 
                       sx={{ 
                         mr: 1, 
-                        color: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'action.active' 
+                        color: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'action.active' 
                       }} 
                     />
                   }}
@@ -495,21 +489,20 @@ function TeacherManagement() {
                   variant="outlined"
                   type="password"
                   placeholder={t('enterPassword')}
-                  themeContext={themeContext}
+                  themeMode={themeMode}
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>                  <StyledMotionDiv
                     whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.98 }}
-                    themeContext={themeContext}
+                    themeMode={themeMode}
                   >
                     <Tooltip title={t('AddTeacher')}>
-                      <span>
-                        <ActionButton
+                      <span>                        <ActionButton
                           variant="contained"
                           onClick={debouncedCreateTeacher}
                           disabled={creatingTeacher}
                           startIcon={<SaveIcon />}
-                          themeContext={themeContext}
+                          themeMode={themeMode}
                           sx={{ 
                             py: 1, 
                             px: 4,
@@ -529,14 +522,14 @@ function TeacherManagement() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        themeContext={themeContext}
+        themeMode={themeMode}
       ><Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <SchoolIcon sx={{ 
             mr: 1, 
-            color: themeContext?.theme === 'dark' ? themes.dark.colors.primary : 'primary.main' 
+            color: themeMode?.theme === 'dark' ? themes.dark.colors.primary : 'primary.main' 
           }} />
           <Typography variant="h6" fontWeight="bold" sx={{
-            color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
+            color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
           }}>
             {t('TeachersList')}
           </Typography>
@@ -544,12 +537,11 @@ function TeacherManagement() {
         {loading && !Array.isArray(teachers) ? (          <Box display="flex" justifyContent="center" alignItems="center" py={8}>
             <CircularProgress size={60} />
           </Box>
-        ) : (
-          <ListPaper elevation={0} themeContext={themeContext}>
+        ) : (          <ListPaper elevation={0} themeMode={themeMode}>
             <TeachersList 
               teachers={filteredTeachers} 
               onDeleteClick={debouncedPromptDeleteTeacher}
-              themeContext={themeContext} 
+              themeMode={themeMode} 
             />
           </ListPaper>
         )}
@@ -560,19 +552,19 @@ function TeacherManagement() {
           sx: {
             borderRadius: 3,
             px: 1,
-            backgroundColor: themeContext?.theme === 'dark' ? themes.dark.colors.background.paper : 'white',
-            color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
+            backgroundColor: themeMode?.theme === 'dark' ? themes.dark.colors.background.paper : 'white',
+            color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit',
           }
         }}
       >
         <DialogTitle sx={{
-          color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
+          color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : 'inherit'
         }}>
           {t('confirmDeletion')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{
-            color: themeContext?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
+            color: themeMode?.theme === 'dark' ? themes.dark.colors.text.secondary : 'text.secondary'
           }}>
             {teacherToDelete && 
               t('confirmTeacherDeletion', { 
@@ -580,24 +572,23 @@ function TeacherManagement() {
               })
             }
           </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
+        </DialogContent>        <DialogActions sx={{ p: 2, pt: 0 }}>
           <Button 
             onClick={() => setConfirmDialogOpen(false)} 
             color="primary"
             variant="outlined"
             sx={{ 
               borderRadius: 2,
-              borderColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : undefined,
-              color: themeContext?.theme === 'dark' ? themes.dark.colors.text.primary : undefined,
+              borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : undefined,
+              color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : undefined,
               '&:hover': {
-                borderColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : undefined,
-                backgroundColor: themeContext?.theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : undefined,
+                borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.5)' : undefined,
+                backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : undefined,
               }
             }}
           >
             {t('Cancel')}
-          </Button>          <Button 
+          </Button><Button 
             onClick={debouncedConfirmDelete} 
             color="error"
             variant="contained"

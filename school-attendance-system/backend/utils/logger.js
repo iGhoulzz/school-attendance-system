@@ -54,9 +54,7 @@ const logger = winston.createLogger({
 });
 
 // Add console transport in development environment
-console.log('Setting up logger console transport. NODE_ENV =', process.env.NODE_ENV);
 if (process.env.NODE_ENV !== 'production') {
-  console.log('Adding console transport to logger (development mode)');
   logger.add(
     new winston.transports.Console({
       format: winston.format.combine(
@@ -66,7 +64,6 @@ if (process.env.NODE_ENV !== 'production') {
     })
   );
 } else {
-  console.log('Running in production mode - console transport not added by default');
   // Explicitly add console transport anyway for debugging
   logger.add(
     new winston.transports.Console({

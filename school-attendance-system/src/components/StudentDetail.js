@@ -31,6 +31,65 @@ import {
   Key as KeyIcon
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { styled } from '@mui/material/styles';
+
+// Create a styled wrapper for motion.div that filters out themeMode prop
+const StyledMotionDiv = styled(motion.div, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})(() => ({
+  // No specific styling needed, just filtering the prop
+}));
+
+// Create styled components for MUI components to prevent themeMode prop warnings
+const StyledChip = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+const StyledDialog = styled(Dialog, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+const StyledAlert = styled(Alert, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+// Add a styled TextField component to filter themeMode prop
+const StyledTextField = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+// Add a styled Button component to filter themeMode prop
+const StyledButton = styled(Button, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+// Add a styled Divider component to filter themeMode prop
+const StyledDivider = styled(Divider, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+// Add a styled Typography component to filter themeMode prop
+const StyledTypography = styled(Typography, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+// Add styled components for Dialog-related components
+const StyledDialogContent = styled(DialogContent, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+const StyledDialogActions = styled(DialogActions, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+const StyledCircularProgress = styled(CircularProgress, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
+
+// Add a styled DialogTitle component
+const StyledDialogTitle = styled(DialogTitle, {
+  shouldForwardProp: (prop) => prop !== 'themeMode'
+})({});
 
 function StudentDetail({ studentId, student, onClose }) {
   const { t } = useTranslation();
@@ -104,11 +163,11 @@ function StudentDetail({ studentId, student, onClose }) {
     } finally {
       setIsLoading(false);
     }
-  };
-  if (!studentData) {    return (      <Dialog 
+  };  if (!studentData) {    return (      <StyledDialog 
         open={true}
         fullWidth 
         maxWidth="md"
+        themeMode={themeMode}
         PaperProps={{ 
           sx: { 
             borderRadius: 3, 
@@ -122,23 +181,22 @@ function StudentDetail({ studentId, student, onClose }) {
             backdropFilter: 'blur(12px)',
           } 
         }}
-      >
-        <DialogContent sx={{ 
+      >        <StyledDialogContent sx={{ 
           display: 'flex', 
           justifyContent: 'center', 
           alignItems: 'center', 
           p: 4,
           color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : themes.light.colors.text.primary,
-        }}>
-          <CircularProgress color="primary" />
-        </DialogContent>
-      </Dialog>
+        }} themeMode={themeMode}>
+          <StyledCircularProgress color="primary" themeMode={themeMode} />        </StyledDialogContent>
+      </StyledDialog>
     );
-  }  return (    <Dialog 
+  }  return (    <StyledDialog 
       open={true} 
       onClose={onClose}
       fullWidth
       maxWidth="md"
+      themeMode={themeMode}
       PaperProps={{
         sx: {
           borderRadius: 3, 
@@ -163,10 +221,11 @@ function StudentDetail({ studentId, student, onClose }) {
             : 'rgba(0, 0, 0, 0.5)',
         }
       }}
-    >      <DialogTitle 
-        component={motion.div} 
+    >      <StyledDialogTitle 
+        component={StyledMotionDiv} 
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
+        themeMode={themeMode}
         sx={{ 
           pb: 1, 
           display: 'flex', 
@@ -188,13 +247,13 @@ function StudentDetail({ studentId, student, onClose }) {
               : 'linear-gradient(90deg, #2963ff 30%, #536DFE 100%)',
           }
         }}
-      >
-        <PersonIcon color="primary" />
-        <Typography variant="h5" fontWeight="bold">{t('editStudent')}</Typography>
-      </DialogTitle>      {message && (
+      >        <PersonIcon color="primary" />
+        <StyledTypography variant="h5" fontWeight="bold" themeMode={themeMode}>{t('editStudent')}</StyledTypography>
+      </StyledDialogTitle>      {message && (
         <Box sx={{ px: 3, pt: 2 }}>
-          <Alert 
+          <StyledAlert 
             severity={messageType === 'success' ? 'success' : 'error'} 
+            themeMode={themeMode}
             sx={{ 
               mb: 2,
               backgroundColor: themeMode?.theme === 'dark' 
@@ -211,9 +270,9 @@ function StudentDetail({ studentId, student, onClose }) {
             }}
           >
             {message}
-          </Alert>
+          </StyledAlert>
         </Box>
-      )}        <DialogContent sx={{ pt: 2 }}>
+      )}<StyledDialogContent sx={{ pt: 2 }} themeMode={themeMode}>
         <Box sx={{ mb: 3, p: 2, 
           bgcolor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)', 
           borderRadius: 2,
@@ -221,38 +280,36 @@ function StudentDetail({ studentId, student, onClose }) {
         }}>
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <KeyIcon fontSize="small" color="primary" />                <Typography variant="body2" color={themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'}>
-                  {t('ID')}: <Chip size="small" label={studentData.id} sx={{ 
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>                <KeyIcon fontSize="small" color="primary" />                <StyledTypography variant="body2" color={themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'} themeMode={themeMode}>
+                  {t('ID')}: <StyledChip size="small" label={studentData.id} sx={{ 
                     ml: 1,
                     backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : undefined,
                     color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : undefined,
                   }} />
-                </Typography>
+                </StyledTypography>
               </Box>
             </Grid>
             <Grid item xs={12} sm={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <EventIcon fontSize="small" color="primary" />                <Typography variant="body2" color={themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'}>
-                  {t('dateAdded')}: <Chip size="small" label={new Date(studentData.createdAt).toLocaleDateString()} sx={{ 
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>                <EventIcon fontSize="small" color="primary" />                <StyledTypography variant="body2" color={themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'text.secondary'} themeMode={themeMode}>
+                  {t('dateAdded')}: <StyledChip size="small" label={new Date(studentData.createdAt).toLocaleDateString()} sx={{ 
                     ml: 1,
                     backgroundColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.08)' : undefined,
                     color: themeMode?.theme === 'dark' ? themes.dark.colors.text.primary : undefined,
                   }} />
-                </Typography>
+                </StyledTypography>
               </Box>
             </Grid>
           </Grid>
-        </Box>
-
-        <Divider sx={{ 
-          mb: 3, 
-          borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-        }} />
+        </Box>        <StyledDivider 
+          themeMode={themeMode}
+          sx={{ 
+            mb: 3, 
+            borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+          }}/>
 
         <form onSubmit={handleUpdate}>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6}>              <TextField                fullWidth
+            <Grid item xs={12} sm={6}>              <StyledTextField                fullWidth
                 label={t('Name')}
                 name="name"
                 value={formData.name}
@@ -305,7 +362,7 @@ function StudentDetail({ studentId, student, onClose }) {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>              <TextField
+            <Grid item xs={12} sm={6}>              <StyledTextField
                 fullWidth
                 label={t('Surname')}
                 name="surname"
@@ -341,7 +398,7 @@ function StudentDetail({ studentId, student, onClose }) {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>              <TextField
+            <Grid item xs={12} sm={6}>              <StyledTextField
                 fullWidth
                 label={t('ParentName')}
                 name="parentName"
@@ -377,7 +434,7 @@ function StudentDetail({ studentId, student, onClose }) {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>              <TextField
+            <Grid item xs={12} sm={6}>              <StyledTextField
                 fullWidth
                 label={t('ParentEmail')}
                 type="email"
@@ -414,7 +471,7 @@ function StudentDetail({ studentId, student, onClose }) {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>              <TextField
+            <Grid item xs={12} sm={6}>              <StyledTextField
                 fullWidth
                 label={t('ParentPhone')}
                 type="tel"
@@ -451,7 +508,7 @@ function StudentDetail({ studentId, student, onClose }) {
                 }}
               />
             </Grid>
-            <Grid item xs={12} sm={6}>              <TextField
+            <Grid item xs={12} sm={6}>              <StyledTextField
                 fullWidth
                 label={t('Grade')}
                 name="grade"
@@ -488,12 +545,12 @@ function StudentDetail({ studentId, student, onClose }) {
               />
             </Grid>
           </Grid>
-        </form>
-      </DialogContent>        <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>        <Button 
+        </form>      </StyledDialogContent>        <StyledDialogActions sx={{ px: 3, pb: 3, pt: 2 }} themeMode={themeMode}>        <StyledButton 
           variant="outlined" 
           onClick={onClose} 
           disabled={isLoading} 
           startIcon={<CancelIcon />}
+          themeMode={themeMode}
           sx={{
             borderRadius: 2,
             borderColor: themeMode?.theme === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(25, 118, 210, 0.5)',
@@ -515,13 +572,14 @@ function StudentDetail({ studentId, student, onClose }) {
           }}
         >
           {t('cancel')}
-        </Button>
-        <Button 
+        </StyledButton>
+        <StyledButton 
           variant="contained" 
           color="primary" 
           onClick={handleUpdate}
           disabled={isLoading} 
-          startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+          startIcon={isLoading ? <StyledCircularProgress size={16} color="inherit" themeMode={themeMode} /> : <SaveIcon />}
+          themeMode={themeMode}
           sx={{ 
             borderRadius: 2,
             px: 3,
@@ -565,10 +623,9 @@ function StudentDetail({ studentId, student, onClose }) {
             }
           }}
         >
-          {isLoading ? t('saving') : t('save')}
-        </Button>
-      </DialogActions>
-    </Dialog>
+          {isLoading ? t('saving') : t('save')}        </StyledButton>
+      </StyledDialogActions>
+    </StyledDialog>
   );
 }
 

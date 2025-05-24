@@ -8,7 +8,6 @@ const { sendEmail } = require('../models/emailService');         // Email servic
 const NotificationService = require('../models/notificationService'); // Notification service
 const winston = require('winston');
 
-
 // Configure Winston logger
 const logger = winston.createLogger({
   level: 'info',
@@ -24,6 +23,31 @@ const logger = winston.createLogger({
   ]
 });
 
+// Validation utilities
+const validateDateRequired = (date, res) => {
+  if (!date) {
+    return res.status(400).json({ message: 'Date is required.' });
+  }
+  return null;
+};
+
+const createDateRange = (date) => {
+  const queryDate = new Date(date + 'T00:00:00Z');
+  const nextDay = new Date(queryDate);
+  nextDay.setDate(nextDay.getDate() + 1);
+  return { queryDate, nextDay };
+};
+
+const buildDateQuery = (date) => {
+  const { queryDate, nextDay } = createDateRange(date);
+  return {
+    date: {
+      $gte: queryDate,
+      $lt: nextDay,
+    },
+  };
+};
+
 /**
  * @route   POST /api/attendance
  * @desc    Record attendance for a specific date and grade
@@ -32,24 +56,28 @@ const logger = winston.createLogger({
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const teacherId = req.userId; // Extracted from the authentication token
-    const { date, grade, records } = req.body;
+    const { date, grade, classId, records } = req.body;    // Log receipt of attendance data
+    logger.info(`Received attendance data: date=${date}, grade=${grade}, classId=${classId}, records=${records ? records.length : 0}`);
 
     // Validate input
-    if (!date || !grade || !records || records.length === 0) {
+    if (!date || !grade || !classId || !records || records.length === 0) {
+      logger.warn('Missing required attendance fields');
       return res.status(400).json({
-        message: 'Date, grade, and attendance records are required.',
+        message: 'Date, grade, classId, and attendance records are required.',
       });
     }
 
     // Verify the teacher exists
     const teacher = await Teacher.findById(teacherId);
     if (!teacher) {
+      logger.warn(`Teacher not found: ${teacherId}`);
       return res.status(404).json({ message: 'Teacher not found.' });
     }
 
     // Validate each attendance record
     for (const record of records) {
       if (!record.studentId || !record.status) {
+        logger.warn('Invalid record format in attendance submission');
         return res.status(400).json({
           message: 'Each record must contain studentId and status.',
         });
@@ -61,19 +89,22 @@ router.post('/', authMiddleware, async (req, res) => {
     const uniqueStudentIds = new Set(studentIds);
 
     if (uniqueStudentIds.size !== studentIds.length) {
+      logger.warn('Duplicate student IDs in attendance submission');
       return res.status(400).json({
         message: 'Duplicate attendance records for the same student are not allowed.',
       });
     }
 
     // Set date to midnight UTC to ensure consistency
-    const attendanceDate = new Date(date + 'T00:00:00Z');
-
-    // Check if attendance has already been recorded for this date and grade
+    const attendanceDate = new Date(date + 'T00:00:00Z');    // Check if attendance has already been recorded for this date, grade, and classId
     const existingAttendance = await Attendance.findOne({
       date: attendanceDate,
       grade,
+      classId, // Using classId to ensure correct identification of attendance records
     });
+
+    // Log the query and result for debugging
+    logger.info(`Looking for existing attendance: date=${attendanceDate.toISOString()}, grade=${grade}, classId=${classId}, found=${existingAttendance ? 'yes' : 'no'}`);
 
     if (existingAttendance) {
       // Check if any of the studentIds already have records
@@ -86,6 +117,7 @@ router.post('/', authMiddleware, async (req, res) => {
       );
 
       if (duplicateStudents.length > 0) {
+        logger.warn(`${duplicateStudents.length} duplicate students in attendance submission`);
         return res.status(400).json({
           message: 'Attendance for one or more students has already been recorded for this date.',
         });
@@ -102,15 +134,17 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
-    // If no existing attendance, create a new record
+    // If no existing attendance, create a new record with classId
     const attendance = new Attendance({
       date: attendanceDate,
       grade,
+      classId, // Include classId in new record
       teacherId: teacher._id,
       records,
     });
 
     await attendance.save();
+    logger.info('New attendance record created successfully');
 
     // Create notifications for admins
     const admins = await require('../models/Admin').find({ role: 'admin' });
@@ -149,36 +183,33 @@ router.post('/', authMiddleware, async (req, res) => {
 
 /**
  * @route   GET /api/attendance
- * @desc    Get attendance records by date and optional grade
+ * @desc    Get attendance records by date and optional grade/classId
  * @access  Private (Authenticated users only)
  */
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { date, grade } = req.query;
+    const { date, grade, classId } = req.query;
 
-    if (!date) {
-      return res.status(400).json({ message: 'Date is required.' });
-    }
+    // Use consolidated validation
+    const validationError = validateDateRequired(date, res);
+    if (validationError) return validationError;
 
-    // Parse the date from the query parameter
-    const queryDate = new Date(date + 'T00:00:00Z');
+    logger.info(`GET attendance request: date=${date}, grade=${grade || 'any'}, classId=${classId || 'any'}`);
 
-    // Get the next day to create a date range
-    const nextDay = new Date(queryDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    // Build query object based on provided filters
-    const query = {
-      date: {
-        $gte: queryDate,
-        $lt: nextDay,
-      },
-    };
+    // Build query using utility function
+    const query = buildDateQuery(date);
+    
     if (grade) {
       query.grade = grade;
     }
+    if (classId) {
+      query.classId = classId;
+    } else if (grade) {
+      // If no classId provided but grade is given, try to find records with any classId for this grade
+      logger.info(`No classId provided, will retrieve all records for grade ${grade} on ${date}`);
+    }
 
-    // Find attendance records for the specified date and optionally grade
+    // Find attendance records for the specified date and optionally grade/classId
     const attendanceRecords = await Attendance.find(query)
       .populate({
         path: 'records.student',
@@ -190,8 +221,11 @@ router.get('/', authMiddleware, async (req, res) => {
       });
 
     if (!attendanceRecords || attendanceRecords.length === 0) {
+      logger.info(`No attendance records found for date=${date}, grade=${grade || 'any'}, classId=${classId || 'any'}`);
       return res.status(200).json([]);
     }
+
+    logger.info(`Found ${attendanceRecords.length} attendance records`);
 
     // Group attendance records by date
     const groupedRecords = {};
@@ -210,6 +244,7 @@ router.get('/', authMiddleware, async (req, res) => {
         date: dateKey,
         records: recordsForDate.map((attendance) => ({
           grade: attendance.grade,
+          classId: attendance.classId || 'unknown', // Include classId in response
           teacherName: attendance.teacherId
             ? `${attendance.teacherId.name} ${attendance.teacherId.surname}`
             : 'Unknown Teacher',
@@ -233,43 +268,45 @@ router.get('/', authMiddleware, async (req, res) => {
 
 /**
  * @route   DELETE /api/attendance
- * @desc    Delete attendance records by date
+ * @desc    Delete attendance records by date and optional filters
  * @access  Private (Authenticated users only)
  */
 router.delete('/', authMiddleware, async (req, res) => {
   try {
-    const { date } = req.query;
+    const { date, grade, classId } = req.query;
 
-    if (!date) {
-      return res.status(400).json({ message: 'Date is required.' });
+    // Use consolidated validation
+    const validationError = validateDateRequired(date, res);
+    if (validationError) return validationError;
+
+    logger.info(`DELETE attendance request: date=${date}, grade=${grade || 'any'}, classId=${classId || 'any'}`);
+
+    // Build query using utility function
+    const query = buildDateQuery(date);
+    
+    // Add optional filters if provided
+    if (grade) {
+      query.grade = grade;
+    }
+    if (classId) {
+      query.classId = classId;
     }
 
-    // Parse the date from the query parameter
-    const queryDate = new Date(date + 'T00:00:00Z');
-
-    // Get the next day to create a date range
-    const nextDay = new Date(queryDate);
-    nextDay.setDate(nextDay.getDate() + 1);
-
-    // Build query object
-    const query = {
-      date: {
-        $gte: queryDate,
-        $lt: nextDay,
-      },
-    };
-
-    // Delete attendance records for the specified date
+    // Delete attendance records based on query
     const result = await Attendance.deleteMany(query);
 
     if (result.deletedCount === 0) {
+      logger.info(`No attendance records found to delete for date=${date}, grade=${grade || 'any'}, classId=${classId || 'any'}`);
       return res.status(200).json({
         message: 'No attendance records found for this date to delete.',
       });
     }
 
-    logger.info('Attendance records deleted successfully');
-    res.status(200).json({ message: 'Attendance records deleted successfully.' });
+    logger.info(`${result.deletedCount} attendance records deleted successfully`);
+    res.status(200).json({ 
+      message: 'Attendance records deleted successfully.',
+      count: result.deletedCount
+    });
   } catch (error) {
     logger.error(`Error deleting attendance records: ${error.message}`);
     res.status(500).json({ message: 'Error deleting attendance records.' });
@@ -286,12 +323,12 @@ router.post('/send-alerts', authMiddleware, async (req, res) => {
     logger.info('POST /api/attendance/send-alerts called');
     const { date } = req.body;
 
-    if (!date) {
-      return res.status(400).json({ message: 'Date is required.' });
-    }
+    // Use consolidated validation
+    const validationError = validateDateRequired(date, res);
+    if (validationError) return validationError;
 
-    // Parse the date from the request body
-    const queryDate = new Date(date + 'T00:00:00Z');
+    // Parse the date using utility function
+    const { queryDate } = createDateRange(date);
 
     // Fetch attendance records for the specified date
     const attendanceRecords = await Attendance.find({ date: queryDate });

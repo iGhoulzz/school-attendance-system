@@ -1,4 +1,6 @@
-// Utility to safely handle localStorage operations
+// MAIN STORAGE UTILITY - This is the central storage utility that should be used throughout the application
+// All other versions (enhanced, fixed, updated) have been consolidated into this file
+// Last updated: May 22, 2025
 import { logger } from './logger';
 
 const isStorageAvailable = () => {
@@ -12,24 +14,23 @@ const isStorageAvailable = () => {
     // Check for a possible iframe context where localStorage might be restricted
     if (window.self !== window.top) {
       // In an iframe, we need to be careful with localStorage
-      console.info('Application is running in an iframe, storage might be restricted');
+      logger.info('Application is running in an iframe, storage might be restricted');
       try {
         // Attempt to perform a minimal test
         window.localStorage.setItem(testKey, testKey);
         window.localStorage.removeItem(testKey);
         return true;
       } catch (iframeError) {
-        console.warn('Storage access denied in iframe context:', iframeError);
+        logger.warn('Storage access denied in iframe context:', iframeError);
         return false;
       }
     }
     
     // Normal browser context test
     window.localStorage.setItem(testKey, testKey);
-    window.localStorage.removeItem(testKey);
-    return true;
+    window.localStorage.removeItem(testKey);    return true;
   } catch (e) {
-    console.warn('localStorage not available:', e);
+    logger.warn('localStorage not available:', e);
     return false;
   }
 };
@@ -82,15 +83,14 @@ const storageUtils = {
       const item = localStorage.getItem(key);
       return item ? item : null;
     } catch (e) {
-      console.warn(`Error accessing storage for key ${key}:`, e);
+      logger.warn(`Error accessing storage for key ${key}:`, e);
       // Try memory fallback
       return memoryStorage.has(key) ? memoryStorage.get(key) : null;
     }
   },
   
   setItem: (key, value) => {
-    try {
-      if (!checkStorageAvailable()) {
+    try {      if (!checkStorageAvailable()) {
         // Use memory fallback if localStorage isn't available
         memoryStorage.set(key, value);
         return true;
@@ -98,7 +98,7 @@ const storageUtils = {
       localStorage.setItem(key, value);
       return true;
     } catch (e) {
-      console.warn(`Error setting storage for key ${key}:`, e);
+      logger.warn(`Error setting storage for key ${key}:`, e);
       // Try memory fallback
       memoryStorage.set(key, value);
       return true;
@@ -106,8 +106,7 @@ const storageUtils = {
   },
   
   removeItem: (key) => {
-    try {
-      if (!checkStorageAvailable()) {
+    try {      if (!checkStorageAvailable()) {
         // Use memory fallback if localStorage isn't available
         memoryStorage.delete(key);
         return true;
@@ -119,7 +118,7 @@ const storageUtils = {
       }
       return true;
     } catch (e) {
-      console.warn(`Error removing key ${key} from storage:`, e);
+      logger.warn(`Error removing key ${key} from storage:`, e);
       // Try memory fallback
       memoryStorage.delete(key);
       return true;
@@ -127,8 +126,7 @@ const storageUtils = {
   },
   
   clear: () => {
-    try {
-      if (!checkStorageAvailable()) {
+    try {      if (!checkStorageAvailable()) {
         // Use memory fallback if localStorage isn't available
         memoryStorage.clear();
         return true;
@@ -138,7 +136,7 @@ const storageUtils = {
       memoryStorage.clear();
       return true;
     } catch (e) {
-      console.warn('Error clearing storage:', e);
+      logger.warn('Error clearing storage:', e);
       // Try memory fallback
       memoryStorage.clear();
       return true;
@@ -168,11 +166,10 @@ const storageUtils = {
         expiryTime.setMinutes(expiryTime.getMinutes() + expiryMinutes);
         storageItem.expiresAt = expiryTime.toISOString();
       }
-      
-      localStorage.setItem(namespacedKey, JSON.stringify(storageItem));
+        localStorage.setItem(namespacedKey, JSON.stringify(storageItem));
       return true;
     } catch (error) {
-      console.error('Error storing JSON item in localStorage:', error);
+      logger.error('Error storing JSON item in localStorage:', error);
       return false;
     }
   },
@@ -204,10 +201,9 @@ const storageUtils = {
         localStorage.removeItem(namespacedKey);
         return defaultValue;
       }
-      
-      return value;
+        return value;
     } catch (error) {
-      console.error('Error getting JSON item from localStorage:', error);
+      logger.error('Error getting JSON item from localStorage:', error);
       return defaultValue;
     }
   },
@@ -224,10 +220,9 @@ const storageUtils = {
         if (key.startsWith(`${namespace}:`)) {
           localStorage.removeItem(key);
         }
-      });
-      return true;
+      });      return true;
     } catch (error) {
-      console.error('Error clearing namespace from localStorage:', error);
+      logger.error('Error clearing namespace from localStorage:', error);
       return false;
     }
   },
@@ -275,118 +270,272 @@ const storageUtils = {
       return storageUtils.clearNamespace('api-cache');
     }
   },
-  // Auth related helpers
+    // Auth related helpers
   getToken: () => {
     try {
       if (!checkStorageAvailable()) return null;
       return localStorage.getItem('token');
     } catch (e) {
-      console.warn('Error getting auth token:', e);
+      logger.warn('Error getting auth token:', e);
       return null;
     }
   },
-  
-  getAuthToken: () => {
+    getAuthToken: () => {
     try {
       if (!checkStorageAvailable()) return null;
       return localStorage.getItem('token');
     } catch (e) {
-      console.warn('Error getting auth token:', e);
+      logger.warn('Error getting auth token:', e);
       return null;
     }
-  },  clearAuth: () => {
+  },
+    setToken: (token) => {
     try {
       if (!checkStorageAvailable()) return false;
+      if (!token) {
+        logger.warn('No token provided');
+        return false;
+      }
+      
+      localStorage.setItem('token', token);
+      logger.info('Token saved successfully');
+      return true;
+    } catch (e) {
+      logger.error('Error saving auth token:', e);
+      return false;
+    }
+  },
+    isAuthenticated: () => {
+    try {
+      if (!checkStorageAvailable()) return false;
+      
+      // Check if token exists AND user data exists
+      const hasToken = !!localStorage.getItem('token');
+      const hasUser = !!localStorage.getItem('user');
+      
+      logger.debug('Authentication check - Token exists:', hasToken, 'User exists:', hasUser);
+      return hasToken || hasUser; // Return true if either exists for backward compatibility
+    } catch (e) {
+      logger.error('Error checking authentication status:', e);
+      return false;
+    }
+  },
+  clearAuth: () => {
+    try {
+      if (!checkStorageAvailable()) return false;
+      logger.info('Clearing authentication data...');
+      console.log('[AUTH] Starting to clear authentication data...');
+      
+      // Log current values for debugging (only in non-production)
+      const currentToken = localStorage.getItem('token');
+      const currentRole = localStorage.getItem('role');
+      const currentName = localStorage.getItem('name');
+      const currentUser = localStorage.getItem('user');
+      
+      console.log('[AUTH] Pre-logout state:', { 
+        hasToken: !!currentToken, 
+        role: currentRole, 
+        name: currentName,
+        hasUserObject: !!currentUser 
+      });
+      
       // Clear token and other auth-related items
       localStorage.removeItem('token');
       localStorage.removeItem('role');
       localStorage.removeItem('name');
       localStorage.removeItem('userId');
+      localStorage.removeItem('user');
+      
+      console.log('[AUTH] Authentication data cleared successfully');
+      logger.info('Authentication data cleared successfully');
       return true;
     } catch (e) {
-      console.warn('Error clearing auth data:', e);
+      console.error('[AUTH] Error clearing auth data:', e);
+      logger.warn('Error clearing auth data:', e);
       return false;
     }
   },
-  clearAuthData: () => {
+    clearAuthData: () => {
     try {
       if (!checkStorageAvailable()) return false;
       
       // Clear all auth-related items
-      const authItems = ['token', 'role', 'name', 'userId'];
+      const authItems = ['token', 'role', 'name', 'userId', 'user'];
       authItems.forEach(item => {
         try {
           localStorage.removeItem(item);
         } catch (err) {
-          console.warn(`Could not remove ${item} from storage`, err);
+          logger.warn(`Could not remove ${item} from storage`, err);
         }
       });
       
       return true;
     } catch (e) {
-      console.warn('Error clearing auth data:', e);
+      logger.warn('Error clearing auth data:', e);
       return false;
     }
   },
   getRole: () => {
     try {
       if (!checkStorageAvailable()) return null;
+      
+      // First try direct access for better performance
+      const directRole = localStorage.getItem('role');
+      if (directRole) {
+        logger.info('Retrieved role directly from localStorage:', directRole);
+        return directRole;
+      }
+      
+      // Try to get role from user object as fallback
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user && user.role) {
+            // Store it directly for future use
+            try {
+              localStorage.setItem('role', user.role);
+              logger.info('Stored role from user object to localStorage:', user.role);
+            } catch (err) {
+              logger.warn('Could not cache role in localStorage:', err);
+            }
+            return user.role;
+          }
+        } catch (e) {
+          // Fall through to legacy method
+        }
+      }
+      
+      // Legacy method
       return localStorage.getItem('role');
     } catch (e) {
-      console.warn('Error getting user role:', e);
+      logger.warn('Error getting user role:', e);
       return null;
     }
   },
-  getName: () => {
+    getName: () => {
     try {
       if (!checkStorageAvailable()) return null;
+      
+      // Try to get name from user object first
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          if (user && user.name) return user.name;
+        } catch (e) {
+          // Fall through to legacy method
+        }
+      }
+      
+      // Legacy method
       return localStorage.getItem('name');
     } catch (e) {
-      console.warn('Error getting user name:', e);
+      logger.warn('Error getting user name:', e);
       return null;
     }
   },
-
   // User info related helpers (non-sensitive)
   setUserInfo: (data) => {
     try {
       if (!checkStorageAvailable()) return false;
       if (!data) {
-        console.warn('No user info provided');
+        logger.warn('No user info provided');
         return false;
       }
       
       // Only store non-sensitive user data
       if (data.role) localStorage.setItem('role', data.role);
       if (data.name) localStorage.setItem('name', data.name);
-      if (data.userId) localStorage.setItem('userId', data.userId);
+      if (data.userId || data.id) localStorage.setItem('userId', data.userId || data.id);
       
       return true;
     } catch (e) {
-      console.warn('Error setting user info:', e);
+      logger.warn('Error setting user info:', e);
       return false;
     }
   },
-  
-  clearUserInfo: () => {
+    // Set complete user object
+  setUser: (user) => {
+    try {
+      if (!checkStorageAvailable()) return false;
+      if (!user) {
+        logger.warn('No user data provided');
+        return false;
+      }
+      
+      // Store the complete user object
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Also store individual properties for backward compatibility
+      if (user.role) localStorage.setItem('role', user.role);
+      if (user.name) localStorage.setItem('name', user.name);
+      if (user.userId || user.id) localStorage.setItem('userId', user.userId || user.id);
+      
+      logger.info('User data saved successfully');
+      return true;
+    } catch (e) {
+      logger.error('Error saving user data:', e);
+      return false;
+    }
+  },
+    // Get complete user object
+  getUser: () => {
+    try {
+      if (!checkStorageAvailable()) return null;
+      
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        // Try to construct from individual properties
+        const userId = localStorage.getItem('userId');
+        const role = localStorage.getItem('role');
+        const name = localStorage.getItem('name');
+        
+        if (userId || role || name) {
+          const user = { id: userId, role, name };
+          // Save this constructed user for future use
+          try {
+            localStorage.setItem('user', JSON.stringify(user));
+          } catch (e) {
+            // Ignore error, just return the constructed user
+          }
+          return user;
+        }
+        
+        return null;
+      }
+      
+      try {
+        return JSON.parse(userStr);
+      } catch (parseError) {
+        logger.error('Error parsing user data:', parseError);
+        return null;
+      }
+    } catch (e) {
+      logger.error('Error retrieving user data:', e);
+      return null;
+    }
+  },
+    clearUserInfo: () => {
     try {
       if (!checkStorageAvailable()) return false;
       
       // Clear user-related items
-      const userItems = ['role', 'name', 'userId'];
+      const userItems = ['role', 'name', 'userId', 'user'];
       userItems.forEach(item => {
         try {
           localStorage.removeItem(item);
         } catch (err) {
-          console.warn(`Could not remove ${item} from storage`, err);
+          logger.warn(`Could not remove ${item} from storage`, err);
         }
       });
       
       return true;
     } catch (e) {
-      console.warn('Error clearing user info:', e);
+      logger.warn('Error clearing user info:', e);
       return false;
-    }  },
+    }
+  }
 };
 
 // Export as default to maintain consistent export pattern

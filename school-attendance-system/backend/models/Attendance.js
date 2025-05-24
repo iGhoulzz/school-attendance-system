@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const attendanceRecordSchema = new mongoose.Schema({
   studentId: { type: String, required: true }, // UUID string
-  status: { type: String, enum: ['Present', 'Absent'], required: true },
+  status: { type: String, enum: ['Present', 'Absent', 'Late'], required: true },
 });
 
 // Add virtual field 'student' to attendanceRecordSchema
@@ -23,6 +23,7 @@ attendanceRecordSchema.set('toJSON', { virtuals: true });
 const attendanceSchema = new mongoose.Schema({
   date: { type: Date, required: true },
   grade: { type: String, required: true },
+  classId: { type: String, required: true }, // Making classId required to ensure proper record management
   teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
   records: [attendanceRecordSchema],
 });

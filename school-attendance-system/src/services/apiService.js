@@ -24,6 +24,7 @@ let csrfToken = null;
  */
 export const fetchCsrfToken = async () => {
   try {
+    logger.debug('Fetching CSRF token...');
     // Always fetch a fresh token
     const response = await axiosInstance.get('/csrf-token', { 
       withCredentials: true,
@@ -31,13 +32,29 @@ export const fetchCsrfToken = async () => {
       headers: {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
-      }
+      },
+      // Add timestamp to prevent caching
+      params: { _t: new Date().getTime() }
     });
+    
+    logger.debug('CSRF token response received');
+    if (!response.data?.csrfToken) {
+      logger.error('No CSRF token found in response', response.data);
+      throw new Error('Invalid CSRF token response');
+    }
+    
     csrfToken = response.data.csrfToken;
     sessionStorage.setItem('csrfToken', csrfToken);
     return csrfToken;
   } catch (error) {
     logger.error('Error fetching CSRF token:', error);
+    
+    // Check for specific errors
+    if (error.response?.status === 401) {
+      // User is not authenticated, clear auth data
+      storageUtils.clearAuth();
+    }
+    
     throw error;
   }
 };
@@ -45,11 +62,23 @@ export const fetchCsrfToken = async () => {
 /**
  * Add CSRF token to request config 
  */
-const addCsrfToken = async (config) => {  try {
+const addCsrfToken = async (config) => {
+  try {
     // Try to get token from memory
     if (!csrfToken) {
       // Try session storage
       csrfToken = sessionStorage.getItem('csrfToken');
+    }
+    
+    // For DELETE, POST, PUT requests, always ensure we have a token
+    const requiresToken = ['delete', 'post', 'put'].includes(config.method?.toLowerCase());
+      if (requiresToken && !csrfToken) {
+      logger.debug('No CSRF token found for sensitive request, fetching one now...');
+      try {
+        csrfToken = await fetchCsrfToken();
+      } catch (tokenError) {
+        logger.warn('Failed to fetch CSRF token:', tokenError);
+      }
     }
     
     if (csrfToken) {
@@ -58,13 +87,13 @@ const addCsrfToken = async (config) => {  try {
         'X-CSRF-Token': csrfToken,
         'X-Requested-With': 'XMLHttpRequest'
       };
-    } else {
-      console.warn('No CSRF token available for request:', config.url);
+    } else if (requiresToken) {
+      logger.warn('No CSRF token available for sensitive request:', config.method, config.url);
     }
     
     return config;
   } catch (error) {
-    console.error('Error adding CSRF token:', error);
+    logger.error('Error adding CSRF token:', error);
     return config;
   }
 };
@@ -74,14 +103,33 @@ axiosInstance.interceptors.request.use(addCsrfToken);
 
 // Add response interceptor for handling common errors
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log successful responses for debugging (development only)
+    logger.debug(`Request succeeded for ${response.config?.url}:`, {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config?.url
+    });
+    return response;
+  },
   async (error) => {
     logger.error(`Request failed for ${error.config?.url}:`, error);
 
     // Handle CSRF token errors
-    if (error.response?.status === 403 && error.response?.data?.error?.includes('csrf')) {
+    if (error.response?.status === 403 && 
+        (error.response?.data?.error?.includes('csrf') || 
+         error.response?.data?.message?.includes('csrf') ||
+         error.message?.includes('CSRF'))) {
+      logger.debug('CSRF token error detected, fetching new token');
       try {
+        // Clear existing token
+        csrfToken = null;
+        sessionStorage.removeItem('csrfToken');
+        
+        // Get a fresh token
         await fetchCsrfToken();
+        logger.debug('New CSRF token fetched successfully, retrying original request');
+        
         // Retry the original request with new token
         const newConfig = { ...error.config };
         delete newConfig.headers['X-CSRF-Token'];
@@ -94,6 +142,7 @@ axiosInstance.interceptors.response.use(
 
     // Handle authentication errors
     if (error.response?.status === 401) {
+      logger.warn('Authentication error detected (401)');
       // Clear auth state
       storageUtils.clearAuth();
       // Let the error propagate to be handled by the component
@@ -154,7 +203,6 @@ const apiService = {
       throw error;
     }
   },
-
   /**
    * Make a DELETE request
    * @param {string} url - The URL to delete from
@@ -163,10 +211,36 @@ const apiService = {
    */
   delete: async (url, options = {}) => {
     try {
+      // Always ensure we have a fresh CSRF token for DELETE requests
+      if (options.refreshCsrf !== false) {        try {
+          await fetchCsrfToken();
+        } catch (csrfError) {
+          logger.warn('Failed to refresh CSRF token before DELETE request:', csrfError);
+        }
+      }
+      
       const response = await axiosInstance.delete(url, options);
       return response.data;
     } catch (error) {
       logger.error(`DELETE request failed for ${url}:`, error);
+        // Special handling for CSRF token errors
+      if (error.response?.status === 403 && 
+          (error.response?.data?.error?.includes('csrf') || 
+           error.message?.includes('CSRF'))) {
+        
+        logger.warn('CSRF token error detected for DELETE request, attempting retry with fresh token');
+        
+        try {
+          // Fetch a new token and retry
+          await fetchCsrfToken();
+          const retryResponse = await axiosInstance.delete(url, options);
+          return retryResponse.data;
+        } catch (retryError) {
+          logger.error(`DELETE retry failed for ${url}:`, retryError);
+          throw retryError;
+        }
+      }
+      
       throw error;
     }
   },

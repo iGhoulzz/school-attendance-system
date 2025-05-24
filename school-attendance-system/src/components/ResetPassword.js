@@ -52,11 +52,10 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
-  // Get token from URL search params
+    // Get token ID from URL search params
   const searchParams = new URLSearchParams(location.search);
-  const token = searchParams.get('token');
-  const isResetMode = !!token;
+  const tokenId = searchParams.get('id');
+  const isResetMode = !!tokenId;
   const handleRequestReset = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -131,10 +130,9 @@ const ResetPassword = () => {
       if (typeof apiService.fetchCsrfToken === 'function') {
         await apiService.fetchCsrfToken();
       }
-      
-      // Make the request with fresh token
+        // Make the request with fresh token
       await apiService.post('/auth/reset-password', {
-        token,
+        tokenId,
         newPassword
       }, {
         refreshCsrf: true
@@ -152,9 +150,8 @@ const ResetPassword = () => {
         console.error('Network error during password reset - this might be a CORS issue.');
       } else if (err.response?.status === 403) {
         // CSRF token issue, try one more time
-        try {
-          await apiService.fetchCsrfToken();
-          await apiService.post('/auth/reset-password', { token, newPassword }, { refreshCsrf: true });
+        try {          await apiService.fetchCsrfToken();
+          await apiService.post('/auth/reset-password', { tokenId, newPassword }, { refreshCsrf: true });
           setSuccess(t('passwordResetSuccess'));
           setTimeout(() => {
             navigate('/login');

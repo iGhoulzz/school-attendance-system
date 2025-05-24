@@ -57,12 +57,17 @@ router.post('/login', async (req, res) => {
           path: '/api/auth/refresh-token', // Restrict to refresh endpoint
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
-        
-        // Include admin's name in the response
+          // Include admin's name and token in the response
         return res.json({
           role: 'admin',
           userId: admin._id,
           name: admin.name,
+          token: token, // Include token in response body as well for backward compatibility
+          user: {
+            id: admin._id,
+            role: 'admin',
+            name: admin.name
+          }
         });
       } else {
         console.log('Password mismatch for admin');
@@ -108,12 +113,17 @@ router.post('/login', async (req, res) => {
           path: '/api/auth/refresh-token',
           maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
-        
-        // Include teacher's name in the response
+          // Include teacher's name and token in the response
         return res.json({
           role: 'teacher',
           userId: teacher._id,
           name: teacher.name,
+          token: token, // Include token in response body as well for backward compatibility
+          user: {
+            id: teacher._id,
+            role: 'teacher',
+            name: teacher.name
+          }
         });
       } else {
         console.log('Password mismatch for teacher');

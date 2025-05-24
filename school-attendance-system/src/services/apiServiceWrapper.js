@@ -4,7 +4,7 @@
 import axios from 'axios';
 import DOMPurify from 'dompurify';
 import cacheManager from '../utils/cacheManager';
-import storageUtils from '../utils/storageUtils';
+import storageUtils from '../utils/storageUtils'; // Use the main standardized version
 import apiService from './apiService';
 import { logger } from '../utils/logger'; // Import secure logger
 
@@ -21,22 +21,36 @@ const login = async (credentials) => {
     // Sanitize credentials to prevent XSS
     const sanitizedCredentials = sanitizeData(credentials);
     
+    console.log('Fetching CSRF token before login...');
     // Ensure CSRF token is fetched first
-    await apiService.fetchCsrfToken();
+    const token = await apiService.fetchCsrfToken();
+    console.log('CSRF token obtained:', token ? 'Yes (truncated: ' + token.substring(0, 8) + '...)' : 'No');
 
+    console.log('Sending login request...');
     // Make login request
     const response = await apiService.post('/auth/login', sanitizedCredentials);
-    
-    // Store user info in local storage
+    console.log('Login response received:', response);
+      // Store user info in local storage
     if (response.user) {
       storageUtils.setUser(response.user);
+    } else if (response.userId && response.role) {
+      // Create user object from response fields
+      const user = {
+        id: response.userId,
+        role: response.role,
+        name: response.name || ''
+      };
+      storageUtils.setUser(user);
     }
+    
+    // Store token if available in response body
     if (response.token) {
       storageUtils.setToken(response.token);
     }
     
     return response;
   } catch (error) {
+    console.error('Login error details:', error);
     logger.error('Login error:', error);
     throw error;
   }

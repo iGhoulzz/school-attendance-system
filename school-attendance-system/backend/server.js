@@ -1,53 +1,27 @@
 // server.js
-console.log('Starting server initialization...');
 require('dotenv').config(); // If using dotenv to manage environment variables
 
-// Check NODE_ENV and other critical environment variables
-console.log('Environment information:');
-console.log('NODE_ENV:', process.env.NODE_ENV || 'not set (defaults to development)');
-console.log('PORT:', process.env.PORT || '5001 (default)');
-console.log('MongoDB URI configured:', process.env.MONGO_URI ? 'Yes' : 'No (using default)');
-
-// Test for stdout buffering issues
-process.stdout.write('Testing process.stdout.write... ');
-process.stdout.write('OK\n');
-
 const express = require('express');
-console.log('Express loaded');
 const cors = require('cors');
-console.log('CORS loaded');
 const mongoose = require('mongoose');
-console.log('Mongoose loaded');
 const morgan = require('morgan');
-console.log('Morgan loaded');
 const helmet = require('helmet');
-console.log('Helmet loaded');
 const cookieParser = require('cookie-parser');
-console.log('Cookie parser loaded');
 const fs = require('fs');
 const path = require('path');
 const rfs = require('rotating-file-stream');
-console.log('FS, Path and RFS loaded');
 const { validationResult } = require('express-validator');
-console.log('Express validator loaded');
 const csrf = require('csrf-csrf');
-console.log('CSRF protection loaded');
 const rateLimit = require('express-rate-limit');
-console.log('Rate limiter loaded');
 const jwt = require('jsonwebtoken');
-console.log('JWT loaded');
 
 // Log before loading logger module
-console.log('About to load logger module...');
 const { 
   logger, 
   accessLogStream, 
   securityLogger, 
   performanceLogger 
 } = require('./utils/logger');
-console.log('Logger module loaded successfully');
-
-console.log('Loading routes...');
 
 const teacherRoutes = require('./routes/teachers'); // Import teacher routes
 const authRoutes = require('./routes/auth'); // Auth routes
@@ -60,9 +34,7 @@ const notificationRoutes = require('./routes/notifications'); // Import notifica
 
 // Add global unhandled exception and rejection handlers
 process.on('uncaughtException', (error) => {
-  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
-  console.error(error.name, error.message);
-  console.error(error.stack);
+  logger.error('UNCAUGHT EXCEPTION! 💥 Shutting down...', { error: error.message, stack: error.stack });
   // Give the logger time to write to file before exiting
   setTimeout(() => {
     process.exit(1);
@@ -70,8 +42,7 @@ process.on('uncaughtException', (error) => {
 });
 
 process.on('unhandledRejection', (error) => {
-  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
-  console.error(error);
+  logger.error('UNHANDLED REJECTION! 💥 Shutting down...', { error: error.message });
   // Give the logger time to write to file before exiting
   setTimeout(() => {
     process.exit(1);
@@ -118,14 +89,13 @@ const csrfOptions = {
     
     // IP fallback as last resort (not ideal but better than nothing)
     return req.ip || '';
-  },
-
-  // Cookie configuration  cookieName: 'csrf-token', // Updated for development (remove __Host- prefix)
+  },  // Cookie configuration
+  cookieName: 'csrf-token', // Updated for development (remove __Host- prefix)
   headerName: 'X-CSRF-Token', // Explicitly define the header name
   cookieOptions: {
     httpOnly: true,
-    secure: true, // Required for SameSite=None
-    sameSite: 'none', // Allow cross-site cookies
+    secure: process.env.NODE_ENV === 'production', // Only require HTTPS in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'lax' for development
     path: '/'
   },
     // Other settings
@@ -292,12 +262,12 @@ const csrfTokenLimiter = rateLimit({
 // CSRF token endpoint with rate limiting
 app.get('/api/csrf-token', csrfTokenLimiter, (req, res) => {
   try {
-    // Log headers for debugging
-    console.log('CSRF token request headers:', req.headers);
+    // Log headers for debugging in development only
+    logger.debug('CSRF token request headers:', req.headers);
     
-    console.log('Generating CSRF token...');
+    logger.debug('Generating CSRF token...');
     const token = generateCsrfToken(req, res, { overwrite: true });
-    console.log(`CSRF token generated successfully: ${token.substring(0, 10)}...`);
+    logger.debug(`CSRF token generated successfully: ${token.substring(0, 10)}...`);
     
     // No need to set cookie manually - the middleware already did it
     
@@ -359,26 +329,36 @@ app.use('/api/auth/reset-password', authLimiter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something broke!' });
+  console.error('SERVER ERROR:', err);
+  console.error('Request URL:', req.originalUrl);
+  console.error('Request body:', req.body);
+  console.error('Error stack:', err.stack);
+  
+  // Send more detailed error in development
+  if (process.env.NODE_ENV !== 'production') {
+    return res.status(500).json({ 
+      message: 'Server error', 
+      error: err.message,
+      path: req.originalUrl,
+      stack: err.stack.split('\n').slice(0, 3).join('\n')
+    });
+  }
+  
+  // Simple error for production
+  res.status(500).json({ message: 'Something went wrong' });
 });
 
 // MongoDB connection and server startup
-console.log('Attempting to connect to MongoDB...');
+logger.info('Attempting to connect to MongoDB...');
 const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/school-management';
-console.log(`Using MongoDB URI: ${mongoURI.replace(/\/\/([^:]+):[^@]+@/, '//***:***@')}`); // Hide credentials if present
+logger.info(`Using MongoDB URI: ${mongoURI.replace(/\/\/([^:]+):[^@]+@/, '//***:***@')}`); // Hide credentials if present
 
 // Function to start the server
 function startServer() {
   try {
-    console.log('Attempting to start server...');
+    logger.info('Attempting to start server...');
     const server = app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      logger.info(`Server started and listening on port ${PORT}`);
-      
-      // Log to ensure console output is working
-      console.log('Console logging is working');
-      console.error('Testing error output channel');
+      logger.info(`Server is running on port ${PORT}`);
     });
 
     // Add error handlers to catch issues
@@ -399,12 +379,12 @@ mongoose.connect(mongoURI, {
   useUnifiedTopology: true,
 })
 .then(() => {
-  console.log('MongoDB connected successfully!');
+  logger.info('MongoDB connected successfully!');
   // Start server only after successful DB connection
   startServer();
 })
 .catch(err => {
-  console.error('MongoDB connection error:', err);
-  console.error('Error details:', JSON.stringify(err, null, 2));
+  logger.error('MongoDB connection error:', err);
+  logger.error('Error details:', JSON.stringify(err, null, 2));
   process.exit(1); // Exit with error code
 });
